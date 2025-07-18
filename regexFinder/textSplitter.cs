@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace regexFinder
 {
-    internal class textSplitter
+    internal class TextSplitter
     {
         public List<string> Lines { get; private set; }
 
-        List<string> SplitText(string text)
+        public List<string> SplitText(string text)
         {
             Lines = new List<string>();
             using (StringReader reader = new StringReader(text))
