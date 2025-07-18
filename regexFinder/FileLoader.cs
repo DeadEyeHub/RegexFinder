@@ -1,12 +1,35 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
 namespace regexFinder
 {
     internal class FileLoader
     {
+        public string TextContent { get; private set; }
+        public string RegexContent { get; private set; }
+
+        public void LoadTextFile(string path)
+        {
+            if (File.Exists(path))
+            {
+                TextContent = File.ReadAllText(path);
+            }
+            else
+            {
+                throw new FileNotFoundException($"Text file not found: {path}");
+            }
+        }
+
+        public void LoadRegexFile(string path)
+        {
+            if (File.Exists(path))
+            {
+                RegexContent = File.ReadAllText(path);
+            }
+            else
+            {
+                throw new FileNotFoundException($"Regex file not found: {path}");
+            }
+        }
     }
 }
