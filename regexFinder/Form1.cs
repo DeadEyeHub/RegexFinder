@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -33,10 +34,8 @@ namespace regexFinder
         {
             TextSplitter textSplitter = new TextSplitter();
             RegexFinder regexFinder = new RegexFinder();
-            List<string> lines = regexFinder.SplitText(bills);
-            List<string> regexPatterns = regexFinder.SplitText(regex);
-            regexPatterns = regexFinder.Patterns;
-            lines = regexFinder.Lines;
+            regexFinder.Lines = regexFinder.SplitText(bills);
+            regexFinder.Patterns = regexFinder.SplitText(regex);
             Dictionary<string, List<string>> results = regexFinder.FindAllMatches();
             richTextBox1.Clear();
             foreach (var pattern in results.Keys)
@@ -51,7 +50,22 @@ namespace regexFinder
                 }
                 richTextBox1.AppendText("\n");
             }
-
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    string filePath = saveFileDialog.FileName;
+                    CsvExporter csvExporter = new CsvExporter();
+                    csvExporter.ExportDictionaryToCsv(results, filePath);
+                    MessageBox.Show($"Results exported to {filePath}");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error exporting results: {ex.Message}");
+                }
+            }
         }
 
         private void textBox2_TextChanged(object sender, EventArgs e)
@@ -82,7 +96,8 @@ namespace regexFinder
                         string filePath = openFileDialog.FileName;
                         FileLoader fileLoader = new FileLoader();
                         fileLoader.LoadTextFile(filePath);
-                        string bills = fileLoader.TextContent;
+                        bills = fileLoader.TextContent;
+                        textBox8.Text = $"Loaded Bills: {Path.GetFileName(filePath)}"; // Set text in textBox2
                     }
                     catch (Exception ex)
                     {
@@ -104,8 +119,9 @@ namespace regexFinder
                     {
                         string filePath = openFileDialog.FileName;
                         FileLoader fileLoader = new FileLoader();
-                        fileLoader.LoadRegexFile(filePath);
-                        string regex = fileLoader.TextContent;
+                        fileLoader.LoadTextFile(filePath);
+                        regex = fileLoader.TextContent;
+                        textBox7.Text = $"Loaded Regex: {Path.GetFileName(filePath)}"; // Set text in textBox2
                     }
                     catch (Exception ex)
                     {

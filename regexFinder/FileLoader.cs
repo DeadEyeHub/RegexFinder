@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 
 namespace regexFinder
 {
@@ -12,7 +13,7 @@ namespace regexFinder
         {
             if (File.Exists(path))
             {
-                TextContent = File.ReadAllText(path);
+                TextContent = File.ReadAllText(path, Encoding.UTF8);
             }
             else
             {
@@ -20,16 +21,5 @@ namespace regexFinder
             }
         }
 
-        public void LoadRegexFile(string path)
-        {
-            if (File.Exists(path))
-            {
-                RegexContent = File.ReadAllText(path);
-            }
-            else
-            {
-                throw new FileNotFoundException($"Regex file not found: {path}");
-            }
-        }
-    }
+     }
 }

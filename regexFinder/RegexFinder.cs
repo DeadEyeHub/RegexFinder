@@ -2,23 +2,18 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using static System.Windows.Forms.LinkLabel;
 
 namespace regexFinder
 {
     internal class RegexFinder
     {
-        public List<string> Lines { get; private set; }
-        public List<string> Patterns { get; private set; }
-
-        public RegexFinder()
-        {
-            Lines = new List<string>();
-            Patterns = new List<string>();
-        }
+        public List<string> Lines { get; set; }
+        public List<string> Patterns { get;  set; }
 
         public List<string> SplitText(string text)
         {
-            Lines = new List<string>();
+            List<string> result = new List<string>();
             using (StringReader reader = new StringReader(text))
             {
                 string line;
@@ -26,17 +21,18 @@ namespace regexFinder
                 {
                     while ((line = reader.ReadLine()) != null)
                     {
-                        Lines.Add(line);
+                        result.Add(line);
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error reading lines: {ex.Message}");
-                    Lines.Add(string.Empty);
+                    result.Add(string.Empty);
                 }
-                return Lines;
             }
+            return result;
         }
+
         public Dictionary<string, List<string>> FindAllMatches()
         {
             var results = new Dictionary<string, List<string>>();
@@ -48,46 +44,35 @@ namespace regexFinder
 
                 foreach (var line in Lines)
                 {
-                    foreach (Match match in regex.Matches(line))
+                    if (regex.Matches(line).Count > 1) { 
+                    var matchCollection = regex.Matches(line);
+                        var matchValues = new List<string>();
+                        var resultsValues = new List<string>();
+                        foreach (Match match in matchCollection)
+                        {
+                            matchValues.Add(match.Value.Trim().Replace('.', ','));
+                        }
+                        resultsValues.Add("=" + string.Join("+", matchValues));
+                        matches.Add(string.Join(" ", resultsValues));
+                        continue;
+                    }
+                    else if (regex.Matches(line).Count == 0)
                     {
-                        matches.Add(match.Value.Trim());
+                        matches.Add(string.Empty);
+                        continue;
+                    } else if (regex.Matches(line).Count == 1)
+                    {
+                        matches.Add(regex.Match(line).Value.Trim().Replace('.', ','));
+                        continue;
                     }
                 }
+            
                 results[pattern] = matches;
             }
 
             return results;
         }
 
-        public List<string> FindAndFormatNumbers(string pattern)
-        {
-            var formattedResults = new List<string>();
-            var regex = new Regex(pattern);
 
-            foreach (var line in Lines)
-            {
-                var matches = regex.Matches(line);
-                var formattedNumbers = new List<string>();
-
-                foreach (Match match in matches)
-                {
-                    // Trim and replace '.' with ',')
-                    string number = match.Value.Trim().Replace('.', ',');
-                    formattedNumbers.Add(number);
-                }
-
-                if (formattedNumbers.Count > 0)
-                {
-                    // Join all numbers with '+')
-                    formattedResults.Add("=" + string.Join("+", formattedNumbers));
-                }
-                else
-                {
-                    formattedResults.Add(string.Empty);
-                }
-            }
-
-            return formattedResults;
-        }
     }
 }
