@@ -33,8 +33,24 @@ namespace regexFinder
         {
             TextSplitter textSplitter = new TextSplitter();
             RegexFinder regexFinder = new RegexFinder();
-            List<string> lines = textSplitter.SplitText(bills);
-            List<string> patterns = regexFinder.Patterns;
+            List<string> lines = regexFinder.SplitText(bills);
+            List<string> regexPatterns = regexFinder.SplitText(regex);
+            regexPatterns = regexFinder.Patterns;
+            lines = regexFinder.Lines;
+            Dictionary<string, List<string>> results = regexFinder.FindAllMatches();
+            richTextBox1.Clear();
+            foreach (var pattern in results.Keys)
+            {
+                richTextBox1.AppendText($"Pattern: {pattern}\n");
+                int totalLines = results[pattern].Count;
+                for (int lineNumber = 0; lineNumber < totalLines; lineNumber++)
+                {
+                    richTextBox1.AppendText($"Line {lineNumber + 1} from {totalLines} amount is now searched through\n");
+                    richTextBox1.AppendText($"Result: {results[pattern][lineNumber]}\n");
+                    Application.DoEvents(); // Keeps UI responsive for large files
+                }
+                richTextBox1.AppendText("\n");
+            }
 
         }
 

@@ -18,18 +18,25 @@ namespace regexFinder
 
         public List<string> SplitText(string text)
         {
-            Lines.Clear();
+            Lines = new List<string>();
             using (StringReader reader = new StringReader(text))
             {
                 string line;
-                while ((line = reader.ReadLine()) != null)
+                try
                 {
-                    Lines.Add(line);
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        Lines.Add(line);
+                    }
                 }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error reading lines: {ex.Message}");
+                    Lines.Add(string.Empty);
+                }
+                return Lines;
             }
-            return Lines;
         }
-
         public Dictionary<string, List<string>> FindAllMatches()
         {
             var results = new Dictionary<string, List<string>>();
