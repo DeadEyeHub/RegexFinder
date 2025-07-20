@@ -13,7 +13,8 @@ namespace regexFinder
         {
             if (File.Exists(path))
             {
-                TextContent = File.ReadAllText(path, Encoding.UTF8);
+                Encoding win1257 = Encoding.GetEncoding("windows-1257");
+                TextContent = File.ReadAllText(path);
             }
             else
             {

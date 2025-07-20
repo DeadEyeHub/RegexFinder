@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using static System.Windows.Forms.LinkLabel;
@@ -33,19 +34,28 @@ namespace regexFinder
             return result;
         }
 
-        public Dictionary<string, List<string>> FindAllMatches()
+        public Dictionary<string, List<string>> FindAllMatches(NotificationProgress nf)
         {
             var results = new Dictionary<string, List<string>>();
 
+            int totalProgress = Patterns.Count * Lines.Count;
+            int progress = 0;
+
+            int patternNumber = 0;
             foreach (var pattern in Patterns)
             {
+                patternNumber++;
+
                 var matches = new List<string>();
                 var regex = new Regex(pattern);
 
+                int lineNumber = 0;
                 foreach (var line in Lines)
                 {
-                    if (regex.Matches(line).Count > 1) { 
+                    Debug.WriteLine($"Processing line {++lineNumber} {patternNumber}");
+                    nf.SetProgress(++progress, totalProgress);
                     var matchCollection = regex.Matches(line);
+                    if (matchCollection.Count > 1) { 
                         var matchValues = new List<string>();
                         var resultsValues = new List<string>();
                         foreach (Match match in matchCollection)
@@ -56,13 +66,13 @@ namespace regexFinder
                         matches.Add(string.Join(" ", resultsValues));
                         continue;
                     }
-                    else if (regex.Matches(line).Count == 0)
+                    else if (matchCollection.Count == 0)
                     {
                         matches.Add(string.Empty);
                         continue;
-                    } else if (regex.Matches(line).Count == 1)
+                    } else if (matchCollection.Count == 1)
                     {
-                        matches.Add(regex.Match(line).Value.Trim().Replace('.', ','));
+                        matches.Add(matchCollection[0].Value.Trim().Replace('.', ','));
                         continue;
                     }
                 }

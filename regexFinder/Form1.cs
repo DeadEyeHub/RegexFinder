@@ -36,20 +36,8 @@ namespace regexFinder
             RegexFinder regexFinder = new RegexFinder();
             regexFinder.Lines = regexFinder.SplitText(bills);
             regexFinder.Patterns = regexFinder.SplitText(regex);
-            Dictionary<string, List<string>> results = regexFinder.FindAllMatches();
-            richTextBox1.Clear();
-            foreach (var pattern in results.Keys)
-            {
-                richTextBox1.AppendText($"Pattern: {pattern}\n");
-                int totalLines = results[pattern].Count;
-                for (int lineNumber = 0; lineNumber < totalLines; lineNumber++)
-                {
-                    richTextBox1.AppendText($"Line {lineNumber + 1} from {totalLines} amount is now searched through\n");
-                    richTextBox1.AppendText($"Result: {results[pattern][lineNumber]}\n");
-                    Application.DoEvents(); // Keeps UI responsive for large files
-                }
-                richTextBox1.AppendText("\n");
-            }
+            var progress = new NotificationProgress(tbProgress, pbConverter);
+            Dictionary<string, List<string>> results = regexFinder.FindAllMatches(progress);
             SaveFileDialog saveFileDialog = new SaveFileDialog();
             saveFileDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
             if (saveFileDialog.ShowDialog() == DialogResult.OK)
