@@ -6,15 +6,14 @@ namespace regexFinder
 {
     internal class FileLoader
     {
-        public string TextContent { get; private set; }
-        public string RegexContent { get; private set; }
+        public string[] Lines { get; private set; }
 
-        public void LoadTextFile(string path)
+        public void LoadTextFile(string path, bool isUTF)
         {
             if (File.Exists(path))
             {
                 Encoding win1257 = Encoding.GetEncoding("windows-1257");
-                TextContent = File.ReadAllText(path);
+                Lines = File.ReadAllLines(path,  isUTF ?  Encoding.UTF8: win1257);
             }
             else
             {

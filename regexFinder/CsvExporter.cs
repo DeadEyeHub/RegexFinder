@@ -20,30 +20,18 @@ namespace regexFinder
             }
         }
 
-        public void ExportDictionaryToCsv(Dictionary<string, List<string>> data, string filePath)
+        public void ExportResultToCsv(List<List<string>> results, string filePath)
         {
             using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
             {
                 // Write header
-                writer.WriteLine(string.Join(",", data.Keys));
+                //writer.WriteLine(string.Join(",", data.Keys));
 
                 // Find the max number of rows
-                int maxRows = 0;
-                foreach (var list in data.Values)
-                    if (list.Count > maxRows) maxRows = list.Count;
 
-                // Write rows
-                for (int i = 0; i < maxRows; i++)
-                {
-                    var row = new List<string>();
-                    foreach (var key in data.Keys)
-                    {
-                        if (i < data[key].Count)
-                            row.Add($"\"{data[key][i].Replace("\"", "\"\"")}\"");
-                        else
-                            row.Add("");
-                    }
-                    writer.WriteLine(string.Join(",", row));
+                foreach (var list in results) 
+                { 
+                    writer.WriteLine(string.Join(",", list));
                 }
             }
         }

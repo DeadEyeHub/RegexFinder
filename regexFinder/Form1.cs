@@ -2,10 +2,13 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -13,30 +16,20 @@ namespace regexFinder
 {
     public partial class Form1 : Form
     {
-        public string bills = "";
-        public string regex = "";
+        public string[] _lines;
+        public List<Regex> _regexList = new List<Regex>();
+        CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
         public Form1()
         {
             InitializeComponent();
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        private void bTransform_Click(object sender, EventArgs e)
         {
-
-        }
-
-        private void label1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            RegexFinder regexFinder = new RegexFinder();
-            regexFinder.Lines = regexFinder.SplitText(bills);
-            regexFinder.Patterns = regexFinder.SplitText(regex);
+            RegexFinder regexFinder = new RegexFinder(_cancellationTokenSource.Token);
+            regexFinder.Lines = _lines.ToList();
             var progress = new NotificationProgress(tbProgress, pbConverter);
-            Dictionary<string, List<string>> results = regexFinder.FindAllMatches(progress);
+            var results = regexFinder.FindAllMatches(_regexList, progress);
             SaveFileDialog saveFileDialog = new SaveFileDialog();
             saveFileDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
             if (saveFileDialog.ShowDialog() == DialogResult.OK)
@@ -44,8 +37,8 @@ namespace regexFinder
                 try
                 {
                     string filePath = saveFileDialog.FileName;
-                    CsvExporter csvExporter = new CsvExporter();
-                    csvExporter.ExportDictionaryToCsv(results, filePath);
+                    CsvExporter csvExporter = new CsvExporter();                    
+                    csvExporter.ExportResultToCsv(results, filePath);
                     MessageBox.Show($"Results exported to {filePath}");
                 }
                 catch (Exception ex)
@@ -55,22 +48,7 @@ namespace regexFinder
             }
         }
 
-        private void textBox2_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void textBox4_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void richTextBox1_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button2_Click(object sender, EventArgs e)
+        private void bBills_Click(object sender, EventArgs e)
         {
             // This button is intended to load a text file
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
@@ -82,9 +60,9 @@ namespace regexFinder
                     {
                         string filePath = openFileDialog.FileName;
                         FileLoader fileLoader = new FileLoader();
-                        fileLoader.LoadTextFile(filePath);
-                        bills = fileLoader.TextContent;
-                        textBox8.Text = $"Loaded Bills: {Path.GetFileName(filePath)}"; // Set text in textBox2
+                        fileLoader.LoadTextFile(filePath, false);
+                        _lines = fileLoader.Lines;
+                        textBox8.Text = $"Loaded Bills: {Path.GetFileName(filePath)} lines{_lines.Count()}"; // Set text in textBox2
                     }
                     catch (Exception ex)
                     {
@@ -94,7 +72,7 @@ namespace regexFinder
             }
         }
 
-        private void button3_Click(object sender, EventArgs e)
+        private void bRegex_Click(object sender, EventArgs e)
         {
             // This button is intended to load a text file
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
@@ -106,9 +84,25 @@ namespace regexFinder
                     {
                         string filePath = openFileDialog.FileName;
                         FileLoader fileLoader = new FileLoader();
-                        fileLoader.LoadTextFile(filePath);
-                        regex = fileLoader.TextContent;
-                        textBox7.Text = $"Loaded Regex: {Path.GetFileName(filePath)}"; // Set text in textBox2
+                        fileLoader.LoadTextFile(filePath, true);
+                        var regexList = new List<Regex>();
+                        foreach (var pattern in fileLoader.Lines)
+                        {
+                            try
+                            {
+                                regexList.Add(new Regex(pattern));
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine($"Error compiling regex '{pattern}': {ex.Message}");
+                                MessageBox.Show($"Error compiling regex '{pattern}': {ex.Message}");
+                                return;
+                            }
+                        }
+                        _regexList = regexList;
+
+
+                        textBox7.Text = $"Loaded Regex: {Path.GetFileName(filePath)} lines{_regexList.Count()}"; // Set text in textBox2
                     }
                     catch (Exception ex)
                     {
@@ -116,6 +110,11 @@ namespace regexFinder
                     }
                 }
             }
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            _cancellationTokenSource.Cancel();
         }
     }
 }

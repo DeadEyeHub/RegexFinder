@@ -16,9 +16,12 @@ namespace regexFinder
        
 
         public void SetProgress(int progress, int from) { 
-            _tbProgress.Text = $"{progress} of {from}";
-            _progressBar.Value = (int)((double)progress / from * 10000);
-            Application.DoEvents();
+            if ((progress % 5) == 0)
+            {   
+                _tbProgress.Text = $"{progress} of {from}";
+                _progressBar.Value = (int)((double)progress / from * 10000);
+                Application.DoEvents();
+            }
         }
 
         private readonly TextBox _tbProgress;
