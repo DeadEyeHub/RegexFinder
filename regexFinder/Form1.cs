@@ -32,7 +32,6 @@ namespace regexFinder
 
         private void button1_Click(object sender, EventArgs e)
         {
-            TextSplitter textSplitter = new TextSplitter();
             RegexFinder regexFinder = new RegexFinder();
             regexFinder.Lines = regexFinder.SplitText(bills);
             regexFinder.Patterns = regexFinder.SplitText(regex);
