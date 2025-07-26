@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -20,178 +22,195 @@ namespace regexFinder
         }
 
         public List<string> Lines { get; set; }
-        public List<string> Patterns { get;  set; }
+        public List<PatternDefinition> Patterns { get; set; }
 
-        public List<string> SplitText(string text)
-        {
-            List<string> result = new List<string>();
-            using (StringReader reader = new StringReader(text))
-            {
-                string line;
-                try
-                {
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        result.Add(line);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error reading lines: {ex.Message}");
-                    result.Add(string.Empty);
-                }
-            }
-            return result;
-        }
 
-        public List<List<string>> FindAllMatches(List<Regex> regexList,  NotificationProgress nf)
+
+        public List<List<string>> FindAllMatches(NotificationProgress nf)
         {
             var results = new List<List<string>>();
+            var splitterPattern = Patterns.FirstOrDefault(p => p.Name == "Splitter");
+            if (splitterPattern == null)
+                throw new Exception("Splitter pattern not found");
 
+            var splitter = new Regex(splitterPattern.RegexCommand);
+            var patternsToApply = Patterns.Where(p => p.Name != "Splitter").ToList();
 
-
-            int totalProgress = Lines.Count;
-            int progress = 0;
-            int patternNumber = 0;
-
-            var splitter = regexList[0];
-
-            var regexList2 = regexList.GetRange(1, regexList.Count - 1);
-            var headers = new List<string>();
-
-            foreach (var regex in regexList2)
-            {
-                headers.Add(regex.ToString());
-            }
+            // Заголовки — это .Name из всех паттернов, кроме Splitter
+            var headers = patternsToApply.Select(p => p.Name).ToList();
             results.Add(headers);
 
             int checkBegin = -1;
-            int finalLine = Lines.Count - 1;
-            for (int lineNumber = 0; lineNumber<Lines.Count; lineNumber++)
+            int total = Lines.Count;
+            for (int i = 0; i < Lines.Count; i++)
             {
+                nf.SetProgress(i + 1, total);
                 if (_token.IsCancellationRequested)
-                {
-            
                     break;
-                }
 
-                var line = Lines[lineNumber];
+                var line = Lines[i];
+                bool isLast = i == Lines.Count - 1;
 
-                nf.SetProgress(++progress, totalProgress);
-
-                int lastCheckLine = 0;
-                if (lineNumber == Lines.Count - 1) 
-                {
-                    lastCheckLine = lineNumber;
-                }
-                else if(splitter.IsMatch(line))
+                if (splitter.IsMatch(line) || isLast)
                 {
                     if (checkBegin < 0)
                     {
-                        checkBegin = lineNumber;
+                        checkBegin = i;
                         continue;
                     }
 
-                    lastCheckLine = lineNumber - 1;
+                    int checkEnd = isLast ? i : i - 1;
+                    var checkLines = Lines.GetRange(checkBegin, checkEnd - checkBegin + 1);
+                    var values = ProcessCheck(checkLines, patternsToApply);
+                    var row = headers.Select(h => values.ContainsKey(h) ? values[h] : string.Empty).ToList();
+                    results.Add(row);
+                    checkBegin = isLast ? -1 : i;
                 }
-                else
-                {
-                    continue;
-                }
-
-                var checkLines = Lines.GetRange(checkBegin, lastCheckLine - checkBegin+1);
-                checkBegin = lastCheckLine + 1;
-
-                var columms = proceessCheck(checkLines, regexList2);
-
-                var list = new List<string>();
-                foreach (var regex in regexList2)
-                {
-                    columms.TryGetValue(regex, out string value);
-                    list.Add(value ?? string.Empty);
-                }
-
-                results.Add(list);
-
-
-            }
-
-            return results;
-
-
-            foreach (var regex in regexList)
-            {
-                patternNumber++;
-
-                var matches = new List<string>();
-
-                foreach (var line in Lines)
-                {
-                    //Debug.WriteLine($"Processing line {++lineNumber}");
-                    nf.SetProgress(++progress, totalProgress);
-
-                    //int lineNumber = 0;
-                    var matchCollection = regex.Matches(line);
-                    if (matchCollection.Count > 1) { 
-                        var matchValues = new List<string>();
-                        var resultsValues = new List<string>();
-                        foreach (Match match in matchCollection)
-                        {
-                            matchValues.Add(match.Value.Trim().Replace('.', ','));
-                        }
-                        resultsValues.Add("=" + string.Join("+", matchValues));
-                        matches.Add(string.Join(" ", resultsValues));
-                        continue;
-                    }
-                    else if (matchCollection.Count == 0)
-                    {
-                        matches.Add(string.Empty);
-                        continue;
-                    } else if (matchCollection.Count == 1)
-                    {
-                        matches.Add(matchCollection[0].Value.Trim().Replace('.', ','));
-                        continue;
-                    }
-                }
-            
-               // results[pattern] = matches;
             }
 
             return results;
         }
-
-        private Dictionary<Regex, string> proceessCheck(List<string> checkLines, List<Regex> regexList)
+        private Dictionary<string, string> ProcessCheck(List<string> checkLines, List<PatternDefinition> patterns)
         {
-            Dictionary<Regex, string> columms = new Dictionary<Regex, string>();
+            var values = new Dictionary<string, string>();
+
+            // Группируем строки по возможным StartsWith
+            var groupedLines = new Dictionary<string, List<string>>();
 
             foreach (var line in checkLines)
             {
-                foreach (var regex in regexList)
+                var trimmedLine = line.TrimStart();
+                bool matched = false;
+
+                foreach (var pattern in patterns)
                 {
-                    var matches = new List<string>();
-                    var matchCollection = regex.Matches(line);
-                    var count = matchCollection.Count;
-                    if ( count == 0)
-                        continue;
+                    if (pattern.StartsWith == null) continue;
 
-
-                    columms.TryGetValue(regex, out string s);
-                    for (int i = 0; i<count;  i++)
+                    foreach (var start in pattern.StartsWith)
                     {
-                        if (!string.IsNullOrEmpty(s))
+                        if (!string.IsNullOrWhiteSpace(start) && trimmedLine.StartsWith(start))
                         {
-                            s+="_";
+                            if (!groupedLines.ContainsKey(start))
+                                groupedLines[start] = new List<string>();
+
+                            groupedLines[start].Add(line);
+                            matched = true;
+                            break;
                         }
-                        s+=matchCollection[i].Value.Trim().Replace('.', ',');
                     }
 
-                    columms[regex] = s;
-                    break; 
+                    if (matched) break;
+                }
+
+                if (!matched)
+                {
+                    if (!groupedLines.ContainsKey("*"))
+                        groupedLines["*"] = new List<string>();
+
+                    groupedLines["*"].Add(line);
                 }
             }
 
-            return columms;
+            // Обработка каждого паттерна
+            foreach (var pattern in patterns)
+            {
+                var regex = new Regex(pattern.RegexCommand);
+                var foundValues = new List<string>();
+
+                // Получаем релевантные строки
+                List<string> relevantLines;
+
+                if (pattern.StartsWith == null || pattern.StartsWith.Count == 0)
+                {
+                    relevantLines = checkLines;
+                }
+                else if (pattern.StartsWith.Count == 1)
+                {
+                    var key = pattern.StartsWith[0];
+                    relevantLines = groupedLines.TryGetValue(key, out var lines) ? lines : new List<string>();
+                }
+                else
+                {
+                    relevantLines = new List<string>();
+                    foreach (var start in pattern.StartsWith)
+                    {
+                        if (!string.IsNullOrWhiteSpace(start) && groupedLines.TryGetValue(start, out var lines))
+                            relevantLines.AddRange(lines);
+                    }
+                }
+
+                // Применяем паттерн к строкам
+                int i = 0;
+                while (i < relevantLines.Count)
+                {
+                    if (_token.IsCancellationRequested)
+                        break;
+
+                    string combinedText = relevantLines[i];
+
+                    if (pattern.Multiline && pattern.LinesCount > 1 && i + pattern.LinesCount <= relevantLines.Count)
+                    {
+                        combinedText = string.Join(" ", relevantLines.GetRange(i, pattern.LinesCount));
+                    }
+
+                    combinedText = combinedText.Replace(',', '.');
+
+                    foreach (Match match in regex.Matches(combinedText))
+                    {
+                        var value = match.Groups.Count > 1
+                            ? match.Groups[1].Value.Trim().Replace(',', '.')
+                            : match.Value.Trim().Replace(',', '.');
+
+                        if (!foundValues.Contains(value))
+                            foundValues.Add(value);
+                    }
+
+                    i++;
+                }
+
+                // Объединение/обработка найденных значений
+                if (pattern.CombineMethod == "merge")
+                {
+                    values[pattern.Name] = string.Join("", foundValues.Distinct());
+                }
+                else if (pattern.CombineMethod == "sum")
+                {
+                    var floatValues = foundValues
+                        .Select(v => v.Replace(',', '.'))
+                        .Select(v => double.TryParse(v, NumberStyles.Any, CultureInfo.InvariantCulture, out var f) ? f : (double?)null)
+                        .Where(v => v.HasValue)
+                        .Select(v => v.Value)
+                        .ToList();
+
+                    double? compareTarget = null;
+                    if (!string.IsNullOrWhiteSpace(pattern.CompareTo))
+                    {
+                        foreach (var refName in pattern.CompareTo.Split(',').Select(n => n.Trim()))
+                        {
+                            if (values.TryGetValue(refName, out string refVal) &&
+                                double.TryParse(refVal.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out var val))
+                            {
+                                compareTarget = val;
+                                break;
+                            }
+                        }
+                    }
+
+                    var sum = floatValues.Sum();
+                    values[pattern.Name] = sum.ToString("0.00", CultureInfo.InvariantCulture);
+                }
+                else // none
+                {
+                    values[pattern.Name] = foundValues.FirstOrDefault();
+                }
+            }
+
+            return values;
         }
+
+
+
+
     }
 }
 

@@ -19,6 +19,9 @@ namespace regexFinder
         public string[] _lines;
         public List<Regex> _regexList = new List<Regex>();
         CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        private RegexFinder regexFinder;
+        private List<PatternDefinition> _patterns;
+        public bool _isUTF8 = true; // По умолчанию UTF-8
         public Form1()
         {
             InitializeComponent();
@@ -28,8 +31,9 @@ namespace regexFinder
         {
             RegexFinder regexFinder = new RegexFinder(_cancellationTokenSource.Token);
             regexFinder.Lines = _lines.ToList();
+            regexFinder.Patterns = _patterns;
             var progress = new NotificationProgress(tbProgress, pbConverter);
-            var results = regexFinder.FindAllMatches(_regexList, progress);
+            var results = regexFinder.FindAllMatches(progress);
             SaveFileDialog saveFileDialog = new SaveFileDialog();
             saveFileDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
             if (saveFileDialog.ShowDialog() == DialogResult.OK)
@@ -37,7 +41,7 @@ namespace regexFinder
                 try
                 {
                     string filePath = saveFileDialog.FileName;
-                    CsvExporter csvExporter = new CsvExporter();                    
+                    CsvExporter csvExporter = new CsvExporter();
                     csvExporter.ExportResultToCsv(results, filePath);
                     MessageBox.Show($"Results exported to {filePath}");
                 }
@@ -60,7 +64,7 @@ namespace regexFinder
                     {
                         string filePath = openFileDialog.FileName;
                         FileLoader fileLoader = new FileLoader();
-                        fileLoader.LoadTextFile(filePath, false);
+                        fileLoader.LoadTextFile(filePath, UTF8.Checked);
                         _lines = fileLoader.Lines;
                         textBox8.Text = $"Loaded Bills: {Path.GetFileName(filePath)} lines{_lines.Count()}"; // Set text in textBox2
                     }
@@ -74,47 +78,53 @@ namespace regexFinder
 
         private void bRegex_Click(object sender, EventArgs e)
         {
-            // This button is intended to load a text file
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                openFileDialog.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*";
+                openFileDialog.Filter = "YAML files (*.yaml;*.yml)|*.yaml;*.yml|All files (*.*)|*.*";
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     try
                     {
                         string filePath = openFileDialog.FileName;
-                        FileLoader fileLoader = new FileLoader();
-                        fileLoader.LoadTextFile(filePath, true);
-                        var regexList = new List<Regex>();
-                        foreach (var pattern in fileLoader.Lines)
+
+                        PatternLoader patternLoader = new PatternLoader();
+                        _patterns = patternLoader.LoadPatterns(filePath); // сохранить в поле
+
+                        // Если RegexFinder уже существует
+                        if (regexFinder != null)
                         {
-                            try
-                            {
-                                regexList.Add(new Regex(pattern));
-                            }
-                            catch (Exception ex)
-                            {
-                                Debug.WriteLine($"Error compiling regex '{pattern}': {ex.Message}");
-                                MessageBox.Show($"Error compiling regex '{pattern}': {ex.Message}");
-                                return;
-                            }
+                            regexFinder.Patterns = _patterns;
                         }
-                        _regexList = regexList;
 
+                        // Для совместимости, если используется старый _regexList
+                        _regexList = _patterns
+                            .Where(p => !string.IsNullOrWhiteSpace(p.RegexCommand))
+                            .Select(p => new Regex(p.RegexCommand))
+                            .ToList();
 
-                        textBox7.Text = $"Loaded Regex: {Path.GetFileName(filePath)} lines{_regexList.Count()}"; // Set text in textBox2
+                        textBox7.Text = $"Loaded YAML: {Path.GetFileName(filePath)} patterns: {_regexList.Count}";
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Error loading file: {ex.Message}");
+                        MessageBox.Show($"Error loading YAML file: {ex.Message}");
                     }
                 }
             }
         }
 
+
+
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             _cancellationTokenSource.Cancel();
+        }
+
+        private void UTF8_CheckedChanged(object sender, EventArgs e)
+        {
+            if (!UTF8.Checked)
+            {
+                _isUTF8 = false;
+            }
         }
     }
 }

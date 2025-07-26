@@ -28,180 +28,195 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.label1 = new System.Windows.Forms.Label();
-            this.bTransform = new System.Windows.Forms.Button();
-            this.bBills = new System.Windows.Forms.Button();
-            this.bRegex = new System.Windows.Forms.Button();
-            this.textBox1 = new System.Windows.Forms.TextBox();
-            this.textBox2 = new System.Windows.Forms.TextBox();
-            this.textBox3 = new System.Windows.Forms.TextBox();
-            this.textBox4 = new System.Windows.Forms.TextBox();
-            this.textBox5 = new System.Windows.Forms.TextBox();
-            this.textBox6 = new System.Windows.Forms.TextBox();
-            this.textBox7 = new System.Windows.Forms.TextBox();
-            this.textBox8 = new System.Windows.Forms.TextBox();
-            this.tbProgress = new System.Windows.Forms.TextBox();
-            this.pbConverter = new System.Windows.Forms.ProgressBar();
-            this.SuspendLayout();
+            label1 = new System.Windows.Forms.Label();
+            bTransform = new System.Windows.Forms.Button();
+            bBills = new System.Windows.Forms.Button();
+            bRegex = new System.Windows.Forms.Button();
+            textBox1 = new System.Windows.Forms.TextBox();
+            textBox2 = new System.Windows.Forms.TextBox();
+            textBox3 = new System.Windows.Forms.TextBox();
+            textBox4 = new System.Windows.Forms.TextBox();
+            textBox5 = new System.Windows.Forms.TextBox();
+            textBox6 = new System.Windows.Forms.TextBox();
+            textBox7 = new System.Windows.Forms.TextBox();
+            textBox8 = new System.Windows.Forms.TextBox();
+            tbProgress = new System.Windows.Forms.TextBox();
+            pbConverter = new System.Windows.Forms.ProgressBar();
+            UTF8 = new System.Windows.Forms.CheckBox();
+            SuspendLayout();
             // 
             // label1
             // 
-            this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("MingLiU_HKSCS-ExtB", 26.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.ImageAlign = System.Drawing.ContentAlignment.TopCenter;
-            this.label1.Location = new System.Drawing.Point(82, 128);
-            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(1031, 53);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "Cash register bills to CSV converter";
+            label1.AutoSize = true;
+            label1.Font = new System.Drawing.Font("MingLiU_HKSCS-ExtB", 26.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, 0);
+            label1.ImageAlign = System.Drawing.ContentAlignment.TopCenter;
+            label1.Location = new System.Drawing.Point(91, 160);
+            label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            label1.Name = "label1";
+            label1.Size = new System.Drawing.Size(1031, 53);
+            label1.TabIndex = 0;
+            label1.Text = "Cash register bills to CSV converter";
             // 
             // bTransform
             // 
-            this.bTransform.Location = new System.Drawing.Point(876, 598);
-            this.bTransform.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.bTransform.Name = "bTransform";
-            this.bTransform.Size = new System.Drawing.Size(112, 35);
-            this.bTransform.TabIndex = 1;
-            this.bTransform.Text = "Transform";
-            this.bTransform.UseVisualStyleBackColor = true;
-            this.bTransform.Click += new System.EventHandler(this.bTransform_Click);
+            bTransform.Location = new System.Drawing.Point(973, 748);
+            bTransform.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            bTransform.Name = "bTransform";
+            bTransform.Size = new System.Drawing.Size(124, 44);
+            bTransform.TabIndex = 1;
+            bTransform.Text = "Transform";
+            bTransform.UseVisualStyleBackColor = true;
+            bTransform.Click += bTransform_Click;
             // 
             // bBills
             // 
-            this.bBills.Location = new System.Drawing.Point(63, 598);
-            this.bBills.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.bBills.Name = "bBills";
-            this.bBills.Size = new System.Drawing.Size(210, 35);
-            this.bBills.TabIndex = 2;
-            this.bBills.Text = "Upload cash register bills";
-            this.bBills.UseVisualStyleBackColor = true;
-            this.bBills.Click += new System.EventHandler(this.bBills_Click);
+            bBills.Location = new System.Drawing.Point(70, 748);
+            bBills.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            bBills.Name = "bBills";
+            bBills.Size = new System.Drawing.Size(233, 44);
+            bBills.TabIndex = 2;
+            bBills.Text = "Upload cash register bills";
+            bBills.UseVisualStyleBackColor = true;
+            bBills.Click += bBills_Click;
             // 
             // bRegex
             // 
-            this.bRegex.Location = new System.Drawing.Point(435, 598);
-            this.bRegex.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.bRegex.Name = "bRegex";
-            this.bRegex.Size = new System.Drawing.Size(219, 35);
-            this.bRegex.TabIndex = 3;
-            this.bRegex.Text = "Upload Regex commands";
-            this.bRegex.UseVisualStyleBackColor = true;
-            this.bRegex.Click += new System.EventHandler(this.bRegex_Click);
+            bRegex.Location = new System.Drawing.Point(483, 748);
+            bRegex.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            bRegex.Name = "bRegex";
+            bRegex.Size = new System.Drawing.Size(243, 44);
+            bRegex.TabIndex = 3;
+            bRegex.Text = "Upload Regex commands";
+            bRegex.UseVisualStyleBackColor = true;
+            bRegex.Click += bRegex_Click;
             // 
             // textBox1
             // 
-            this.textBox1.Font = new System.Drawing.Font("Arial", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox1.Location = new System.Drawing.Point(516, 186);
-            this.textBox1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(192, 44);
-            this.textBox1.TabIndex = 4;
-            this.textBox1.Text = "How to use:";
+            textBox1.Font = new System.Drawing.Font("Arial", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, 0);
+            textBox1.Location = new System.Drawing.Point(573, 232);
+            textBox1.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            textBox1.Name = "textBox1";
+            textBox1.Size = new System.Drawing.Size(213, 44);
+            textBox1.TabIndex = 4;
+            textBox1.Text = "How to use:";
             // 
             // textBox2
             // 
-            this.textBox2.Location = new System.Drawing.Point(138, 274);
-            this.textBox2.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(482, 26);
-            this.textBox2.TabIndex = 5;
-            this.textBox2.Text = "1. Transform each file, that each bill or command occupies one line";
+            textBox2.Location = new System.Drawing.Point(153, 342);
+            textBox2.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            textBox2.Name = "textBox2";
+            textBox2.Size = new System.Drawing.Size(535, 31);
+            textBox2.TabIndex = 5;
+            textBox2.Text = "1. Transform each file, that each bill or command occupies one line";
             // 
             // textBox3
             // 
-            this.textBox3.Location = new System.Drawing.Point(138, 315);
-            this.textBox3.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.textBox3.Name = "textBox3";
-            this.textBox3.Size = new System.Drawing.Size(482, 26);
-            this.textBox3.TabIndex = 6;
-            this.textBox3.Text = "2. Upload each file by pressing supposed button";
+            textBox3.Location = new System.Drawing.Point(153, 394);
+            textBox3.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            textBox3.Name = "textBox3";
+            textBox3.Size = new System.Drawing.Size(535, 31);
+            textBox3.TabIndex = 6;
+            textBox3.Text = "2. Upload each file by pressing supposed button";
             // 
             // textBox4
             // 
-            this.textBox4.Location = new System.Drawing.Point(138, 357);
-            this.textBox4.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.textBox4.Name = "textBox4";
-            this.textBox4.Size = new System.Drawing.Size(148, 26);
-            this.textBox4.TabIndex = 7;
-            this.textBox4.Text = "3. Press transform";
+            textBox4.Location = new System.Drawing.Point(153, 446);
+            textBox4.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            textBox4.Name = "textBox4";
+            textBox4.Size = new System.Drawing.Size(164, 31);
+            textBox4.TabIndex = 7;
+            textBox4.Text = "3. Press transform";
             // 
             // textBox5
             // 
-            this.textBox5.Location = new System.Drawing.Point(138, 397);
-            this.textBox5.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.textBox5.Name = "textBox5";
-            this.textBox5.Size = new System.Drawing.Size(148, 26);
-            this.textBox5.TabIndex = 8;
-            this.textBox5.Text = "4. Wait";
+            textBox5.Location = new System.Drawing.Point(153, 496);
+            textBox5.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            textBox5.Name = "textBox5";
+            textBox5.Size = new System.Drawing.Size(164, 31);
+            textBox5.TabIndex = 8;
+            textBox5.Text = "4. Wait";
             // 
             // textBox6
             // 
-            this.textBox6.Location = new System.Drawing.Point(138, 437);
-            this.textBox6.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.textBox6.Name = "textBox6";
-            this.textBox6.Size = new System.Drawing.Size(175, 26);
-            this.textBox6.TabIndex = 9;
-            this.textBox6.Text = "5. Save your CSV file";
+            textBox6.Location = new System.Drawing.Point(153, 546);
+            textBox6.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            textBox6.Name = "textBox6";
+            textBox6.Size = new System.Drawing.Size(194, 31);
+            textBox6.TabIndex = 9;
+            textBox6.Text = "5. Save your CSV file";
             // 
             // textBox7
             // 
-            this.textBox7.Location = new System.Drawing.Point(472, 558);
-            this.textBox7.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.textBox7.Name = "textBox7";
-            this.textBox7.Size = new System.Drawing.Size(148, 26);
-            this.textBox7.TabIndex = 11;
+            textBox7.Location = new System.Drawing.Point(524, 698);
+            textBox7.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            textBox7.Name = "textBox7";
+            textBox7.Size = new System.Drawing.Size(164, 31);
+            textBox7.TabIndex = 11;
             // 
             // textBox8
             // 
-            this.textBox8.Location = new System.Drawing.Point(92, 558);
-            this.textBox8.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.textBox8.Name = "textBox8";
-            this.textBox8.Size = new System.Drawing.Size(148, 26);
-            this.textBox8.TabIndex = 12;
+            textBox8.Location = new System.Drawing.Point(102, 698);
+            textBox8.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            textBox8.Name = "textBox8";
+            textBox8.Size = new System.Drawing.Size(164, 31);
+            textBox8.TabIndex = 12;
             // 
             // tbProgress
             // 
-            this.tbProgress.Location = new System.Drawing.Point(859, 216);
-            this.tbProgress.Name = "tbProgress";
-            this.tbProgress.ReadOnly = true;
-            this.tbProgress.Size = new System.Drawing.Size(226, 26);
-            this.tbProgress.TabIndex = 13;
-            this.tbProgress.TabStop = false;
+            tbProgress.Location = new System.Drawing.Point(954, 270);
+            tbProgress.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            tbProgress.Name = "tbProgress";
+            tbProgress.ReadOnly = true;
+            tbProgress.Size = new System.Drawing.Size(251, 31);
+            tbProgress.TabIndex = 13;
+            tbProgress.TabStop = false;
             // 
             // pbConverter
             // 
-            this.pbConverter.Location = new System.Drawing.Point(192, 504);
-            this.pbConverter.Maximum = 10000;
-            this.pbConverter.Name = "pbConverter";
-            this.pbConverter.Size = new System.Drawing.Size(833, 29);
-            this.pbConverter.TabIndex = 14;
+            pbConverter.Location = new System.Drawing.Point(213, 630);
+            pbConverter.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            pbConverter.Maximum = 10000;
+            pbConverter.Name = "pbConverter";
+            pbConverter.Size = new System.Drawing.Size(926, 36);
+            pbConverter.TabIndex = 14;
+            // 
+            // UTF8
+            // 
+            UTF8.AutoSize = true;
+            UTF8.Location = new System.Drawing.Point(70, 801);
+            UTF8.Name = "UTF8";
+            UTF8.Size = new System.Drawing.Size(78, 29);
+            UTF8.TabIndex = 15;
+            UTF8.Text = "UTF8";
+            UTF8.UseVisualStyleBackColor = true;
+            UTF8.CheckedChanged += UTF8_CheckedChanged;
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1200, 692);
-            this.Controls.Add(this.pbConverter);
-            this.Controls.Add(this.tbProgress);
-            this.Controls.Add(this.textBox8);
-            this.Controls.Add(this.textBox7);
-            this.Controls.Add(this.textBox6);
-            this.Controls.Add(this.textBox5);
-            this.Controls.Add(this.textBox4);
-            this.Controls.Add(this.textBox3);
-            this.Controls.Add(this.textBox2);
-            this.Controls.Add(this.textBox1);
-            this.Controls.Add(this.bRegex);
-            this.Controls.Add(this.bBills);
-            this.Controls.Add(this.bTransform);
-            this.Controls.Add(this.label1);
-            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.Name = "Form1";
-            this.Text = "Window";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
-            this.ResumeLayout(false);
-            this.PerformLayout();
+            AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            ClientSize = new System.Drawing.Size(1333, 865);
+            Controls.Add(UTF8);
+            Controls.Add(pbConverter);
+            Controls.Add(tbProgress);
+            Controls.Add(textBox8);
+            Controls.Add(textBox7);
+            Controls.Add(textBox6);
+            Controls.Add(textBox5);
+            Controls.Add(textBox4);
+            Controls.Add(textBox3);
+            Controls.Add(textBox2);
+            Controls.Add(textBox1);
+            Controls.Add(bRegex);
+            Controls.Add(bBills);
+            Controls.Add(bTransform);
+            Controls.Add(label1);
+            Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            Name = "Form1";
+            Text = "Window";
+            FormClosing += Form1_FormClosing;
+            ResumeLayout(false);
+            PerformLayout();
 
         }
 
@@ -221,6 +236,7 @@
         private System.Windows.Forms.TextBox textBox8;
         private System.Windows.Forms.TextBox tbProgress;
         private System.Windows.Forms.ProgressBar pbConverter;
+        private System.Windows.Forms.CheckBox UTF8;
     }
 }
 
