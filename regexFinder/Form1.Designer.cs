@@ -107,7 +107,8 @@
             textBox2.Name = "textBox2";
             textBox2.Size = new System.Drawing.Size(535, 31);
             textBox2.TabIndex = 5;
-            textBox2.Text = "1. Transform each file, that each bill or command occupies one line";
+            textBox2.Text = "1. Upload txt file";
+            textBox2.TextChanged += textBox2_TextChanged;
             // 
             // textBox3
             // 
@@ -116,7 +117,7 @@
             textBox3.Name = "textBox3";
             textBox3.Size = new System.Drawing.Size(535, 31);
             textBox3.TabIndex = 6;
-            textBox3.Text = "2. Upload each file by pressing supposed button";
+            textBox3.Text = "2. Upload YAML file";
             // 
             // textBox4
             // 
