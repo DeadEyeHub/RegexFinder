@@ -18,6 +18,7 @@ namespace regexFinder
         public string ValueType { get; set; }
         public bool Multiline { get; set; }
         public int LinesCount { get; set; }
+        public bool DistinctValues { get; set; }
 
         [JsonIgnore] public Regex CompiledRegex { get; private set; }
 

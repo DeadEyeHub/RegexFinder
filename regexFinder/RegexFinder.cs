@@ -84,7 +84,7 @@ namespace regexFinder
             if (spans.Count == 0)
                 spans.Add(("__whole__", checkStart, checkEnd));
 
-            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var values = new Dictionary<string, string>(StringComparer.Ordinal);
 
             foreach (var (blockName, start, end) in spans)
             {
@@ -134,7 +134,7 @@ namespace regexFinder
         private Dictionary<string, string> ProcessPatternsOnRange(
             List<string> allLines, int startIdx, int endIdx, List<PatternDefinition> patterns)
         {
-            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var values = new Dictionary<string, string>(StringComparer.Ordinal);
             if (patterns == null || patterns.Count == 0) return values;
 
             int s = Math.Max(0, startIdx);
@@ -155,7 +155,7 @@ namespace regexFinder
                     {
                         string combined = string.Join(" ",
                             Enumerable.Range(0, L)
-                                      .Select(k => allLines[i + k].Replace(',', '.').Trim()));
+                                      .Select(k => allLines[i + k].Trim()));
 
                         foreach (Match m in rx.Matches(combined))
                         {
@@ -169,7 +169,7 @@ namespace regexFinder
                 {
                     for (int i = s; i <= e; i++)
                     {
-                        var text = allLines[i].Replace(',', '.').Trim();
+                        var text = allLines[i].Trim();
                         foreach (Match m in rx.Matches(text))
                         {
                             var v = m.Groups.Count > 1 ? m.Groups[1].Value : m.Value;
@@ -187,11 +187,18 @@ namespace regexFinder
                         break;
 
                     case "sum":
-                        var sum = found
+                        var numericValues = found
                             .Select(ParseDouble)
                             .Where(d => d.HasValue)
-                            .Sum(d => d!.Value);
-                        values[keyName] = sum.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+                            .Select(d => d!.Value)
+                            .ToList();
+                        if (p.DistinctValues)
+                            numericValues = numericValues.Distinct().ToList();
+
+                        var sum = numericValues.Sum();
+                        values[keyName] = numericValues.Count == 0
+                            ? string.Empty
+                            : sum.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
                         break;
 
                     case "none":

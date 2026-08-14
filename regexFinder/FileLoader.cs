@@ -15,8 +15,25 @@ namespace regexFinder
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            Encoding encoding = isUTF ? Encoding.UTF8 : Encoding.GetEncoding("windows-1257");
-            Lines = File.ReadAllLines(path, encoding);
+            var bytes = File.ReadAllBytes(path);
+            if (!isUTF)
+            {
+                Lines = Encoding.GetEncoding("windows-1257").GetString(bytes)
+                    .Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+                return;
+            }
+
+            try
+            {
+                var utf8 = new UTF8Encoding(false, true);
+                Lines = utf8.GetString(bytes)
+                    .Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+            }
+            catch (DecoderFallbackException)
+            {
+                Lines = Encoding.GetEncoding("windows-1257").GetString(bytes)
+                    .Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+            }
         }
 
     }
