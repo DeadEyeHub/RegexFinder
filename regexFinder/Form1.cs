@@ -119,6 +119,13 @@ namespace regexFinder
             }
         }
 
+        private void bTests_Click(object sender, EventArgs e)
+        {
+            var fields = _patternList?.Select(p => p.Name).Where(n => !string.Equals(n, "Splitter", StringComparison.OrdinalIgnoreCase))
+                ?? Enumerable.Empty<string>();
+            using var testForm = new TestForm(fields);
+            testForm.ShowDialog(this);
+        }
 
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)

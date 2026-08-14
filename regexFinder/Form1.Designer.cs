@@ -21,6 +21,7 @@
             bTransform = new System.Windows.Forms.Button();
             bBills = new System.Windows.Forms.Button();
             bRegex = new System.Windows.Forms.Button();
+            bTests = new System.Windows.Forms.Button();
             textBox1 = new System.Windows.Forms.TextBox();
             textBox2 = new System.Windows.Forms.TextBox();
             textBox3 = new System.Windows.Forms.TextBox();
@@ -67,6 +68,14 @@
             bRegex.Text = "Upload Regex commands";
             bRegex.UseVisualStyleBackColor = true;
             bRegex.Click += bRegex_Click;
+            bTests.Location = new System.Drawing.Point(770, 748);
+            bTests.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            bTests.Name = "bTests";
+            bTests.Size = new System.Drawing.Size(145, 44);
+            bTests.TabIndex = 17;
+            bTests.Text = "Tests";
+            bTests.UseVisualStyleBackColor = true;
+            bTests.Click += bTests_Click;
             textBox1.Font = new System.Drawing.Font("Arial", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, 0);
             textBox1.Location = new System.Drawing.Point(573, 232);
             textBox1.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
@@ -155,6 +164,7 @@
             Controls.Add(textBox2);
             Controls.Add(textBox1);
             Controls.Add(bRegex);
+            Controls.Add(bTests);
             Controls.Add(bBills);
             Controls.Add(bTransform);
             Controls.Add(label1);
@@ -174,6 +184,7 @@
         private System.Windows.Forms.Button bTransform;
         private System.Windows.Forms.Button bBills;
         private System.Windows.Forms.Button bRegex;
+        private System.Windows.Forms.Button bTests;
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.TextBox textBox2;
         private System.Windows.Forms.TextBox textBox3;
