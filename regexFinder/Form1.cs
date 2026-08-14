@@ -7,7 +7,6 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -17,44 +16,64 @@ namespace regexFinder
     public partial class Form1 : Form
     {
         public string[] _lines;
-        public List<Regex> _regexList = new List<Regex>();
         CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-        private RegexFinder regexFinder;
-        private List<PatternDefinition> _patterns;
-        public bool _isUTF8 = true; // По умолчанию UTF-8
+        private List<PatternDefinition> _patternList;
+        private List<BlockDefinition> _blockList;
         public Form1()
         {
             InitializeComponent();
+            var buildTime = File.GetLastWriteTime(Application.ExecutablePath);
+            Text = $"regexFinder {Application.ProductVersion}";
+            buildInfoLabel.Text = $"Version {Application.ProductVersion} | build {buildTime:yyyy-MM-dd HH:mm:ss}";
         }
 
         private void bTransform_Click(object sender, EventArgs e)
         {
-            RegexFinder regexFinder = new RegexFinder(_cancellationTokenSource.Token);
-            regexFinder.Lines = _lines.ToList();
-            regexFinder.Patterns = _patterns;
-            var progress = new NotificationProgress(tbProgress, pbConverter);
-            var results = regexFinder.FindAllMatches(progress);
-            SaveFileDialog saveFileDialog = new SaveFileDialog();
-            saveFileDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
-            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            if (_lines == null || _lines.Length == 0)
             {
-                try
+                MessageBox.Show("Load a text file before transforming.");
+                return;
+            }
+
+            if (_patternList == null || !_patternList.Any(p =>
+                    string.Equals(p?.Name, "Splitter", StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show("Load a YAML file containing a Splitter pattern before transforming.");
+                return;
+            }
+
+            try
+            {
+                var finder = new RegexFinder(_cancellationTokenSource.Token)
                 {
-                    string filePath = saveFileDialog.FileName;
-                    CsvExporter csvExporter = new CsvExporter();
-                    csvExporter.ExportResultToCsv(results, filePath);
-                    MessageBox.Show($"Results exported to {filePath}");
-                }
-                catch (Exception ex)
+                    Lines = _lines.ToList(),
+                    Patterns = _patternList,
+                    Blocks = _blockList ?? new List<BlockDefinition>()
+                };
+
+                var progress = new NotificationProgress(tbProgress, pbConverter);
+                var results = finder.FindAlChecks(progress);
+                using var saveFileDialog = new SaveFileDialog
                 {
-                    MessageBox.Show($"Error exporting results: {ex.Message}");
+                    Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+                    DefaultExt = "csv",
+                    AddExtension = true
+                };
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    new CsvExporter().ExportResultToCsv(results, saveFileDialog.FileName);
+                    MessageBox.Show($"Results exported to {saveFileDialog.FileName}");
                 }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error processing file: {ex.Message}");
             }
         }
 
         private void bBills_Click(object sender, EventArgs e)
         {
-            // This button is intended to load a text file
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
                 openFileDialog.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*";
@@ -66,7 +85,7 @@ namespace regexFinder
                         FileLoader fileLoader = new FileLoader();
                         fileLoader.LoadTextFile(filePath, UTF8.Checked);
                         _lines = fileLoader.Lines;
-                        textBox8.Text = $"Loaded Bills: {Path.GetFileName(filePath)} lines{_lines.Count()}"; // Set text in textBox2
+                        textBox8.Text = $"Loaded bills: {Path.GetFileName(filePath)}; lines: {_lines.Length}";
                     }
                     catch (Exception ex)
                     {
@@ -86,23 +105,11 @@ namespace regexFinder
                     try
                     {
                         string filePath = openFileDialog.FileName;
+                        var results = YamlRoot.LoadParts(filePath);
+                        _blockList = results.Blocks;
+                        _patternList = results.Patterns;
 
-                        PatternLoader patternLoader = new PatternLoader();
-                        _patterns = patternLoader.LoadPatterns(filePath); // сохранить в поле
-
-                        // Если RegexFinder уже существует
-                        if (regexFinder != null)
-                        {
-                            regexFinder.Patterns = _patterns;
-                        }
-
-                        // Для совместимости, если используется старый _regexList
-                        _regexList = _patterns
-                            .Where(p => !string.IsNullOrWhiteSpace(p.RegexCommand))
-                            .Select(p => new Regex(p.RegexCommand))
-                            .ToList();
-
-                        textBox7.Text = $"Loaded YAML: {Path.GetFileName(filePath)} patterns: {_regexList.Count}";
+                        textBox7.Text = $"Loaded YAML: {Path.GetFileName(filePath)} patterns: {_patternList.Count}";
                     }
                     catch (Exception ex)
                     {
@@ -119,17 +126,5 @@ namespace regexFinder
             _cancellationTokenSource.Cancel();
         }
 
-        private void UTF8_CheckedChanged(object sender, EventArgs e)
-        {
-            if (!UTF8.Checked)
-            {
-                _isUTF8 = false;
-            }
-        }
-
-        private void textBox2_TextChanged(object sender, EventArgs e)
-        {
-
-        }
     }
 }

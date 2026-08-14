@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace regexFinder
@@ -13,7 +14,6 @@ namespace regexFinder
             {
                 foreach (var row in rows)
                 {
-                    // Escape quotes and commas if needed
                     string safeRow = row.Replace("\"", "\"\"");
                     writer.WriteLine($"\"{safeRow}\"");
                 }
@@ -24,16 +24,15 @@ namespace regexFinder
         {
             using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
             {
-                // Write header
-                //writer.WriteLine(string.Join(",", data.Keys));
-
-                // Find the max number of rows
-
-                foreach (var list in results) 
-                { 
-                    writer.WriteLine(string.Join(",", list));
-                }
+                foreach (var row in results)
+                    writer.WriteLine(string.Join(",", row.Select(EscapeCsvField)));
             }
+        }
+
+        private static string EscapeCsvField(string value)
+        {
+            value ??= string.Empty;
+            return $"\"{value.Replace("\"", "\"\"")}\"";
         }
     }
 }

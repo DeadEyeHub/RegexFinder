@@ -13,7 +13,6 @@ namespace regexFinder
             if (!File.Exists(path))
                 throw new FileNotFoundException($"Text file not found: {path}");
 
-            // Добавляем поддержку codepages (windows-1257 и т.п.)
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
             Encoding encoding = isUTF ? Encoding.UTF8 : Encoding.GetEncoding("windows-1257");

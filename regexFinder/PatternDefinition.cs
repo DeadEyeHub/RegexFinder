@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace regexFinder
@@ -10,11 +12,27 @@ namespace regexFinder
     {
         public string Name { get; set; }
         public string RegexCommand { get; set; }
-        public List <string> StartsWith { get; set; }
-        public string CombineMethod { get; set; }  // "merge", "sum", "none"
-        public string CompareTo { get; set; }      // null или список имён через запятую
-        public string ValueType { get; set; }      // "string", "float", "int", ...
-        public bool Multiline { get; set; }        // если true — объединять несколько строк
-        public int LinesCount { get; set; }        // количество строк для объединения
+        public string BlockName { get; set; }
+        public string CombineMethod { get; set; }
+        public string CompareTo { get; set; }
+        public string ValueType { get; set; }
+        public bool Multiline { get; set; }
+        public int LinesCount { get; set; }
+
+        [JsonIgnore] public Regex CompiledRegex { get; private set; }
+
+        public void BuildRegex(RegexOptions extraOptions = RegexOptions.None, TimeSpan? timeout = null)
+        {
+            if (string.IsNullOrWhiteSpace(RegexCommand))
+            {
+                CompiledRegex = null;
+                return;
+            }
+
+            var opts = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Multiline | extraOptions;
+            CompiledRegex = timeout.HasValue
+                ? new Regex(RegexCommand, opts, timeout.Value)
+                : new Regex(RegexCommand, opts, TimeSpan.FromSeconds(2));
+        }
     }
 }
