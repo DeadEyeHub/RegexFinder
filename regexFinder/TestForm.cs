@@ -20,15 +20,17 @@ namespace regexFinder
         private readonly ComboBox _previous = new();
         private readonly ComboBox _current = new();
         private readonly CheckedListBox _right = new();
+        private readonly ComboBox _sourceField = new();
         private readonly TextBox _name = new();
         private readonly TextBox _csvPath = new();
         private readonly TextBox _tolerance = new();
         private Label _leftLabel;
-        private Label _rightLabel;
         private Label _orderLabel;
         private Label _previousLabel;
         private Label _currentLabel;
         private Label _toleranceLabel;
+        private Label _rightLabel;
+        private Panel _rightPanel;
         private readonly ListBox _checkList = new();
         private readonly DataGridView _results = new();
 
@@ -37,8 +39,8 @@ namespace regexFinder
             _fields = fields.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.Ordinal).ToList();
             Text = "CSV Tests";
             StartPosition = FormStartPosition.CenterParent;
-            Width = 1100;
-            Height = 700;
+            Width = 1300;
+            Height = 780;
             _tolerance.Text = "0.01";
             BuildControls();
             FillFields();
@@ -69,8 +71,24 @@ namespace regexFinder
             _previousLabel = Add(top, "Previous hash", _previous, 0, 3, 1);
             _currentLabel = Add(top, "Current hash", _current, 2, 3, 1);
             _toleranceLabel = Add(top, "Tolerance / step", _tolerance, 0, 4, 1);
-            _rightLabel = Add(top, "Fields to sum", _right, 2, 4, 1);
-            _right.Height = 55;
+            _rightLabel = new Label { Text = "Fields to sum", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
+            top.Controls.Add(_rightLabel, 2, 4);
+            _rightPanel = new Panel { Dock = DockStyle.Fill };
+            _sourceField.DropDownStyle = ComboBoxStyle.DropDownList;
+            _sourceField.Width = 210;
+            var addSource = new Button { Text = "+ Add field", Width = 100 };
+            addSource.Click += (_, _) => AddSourceField();
+            var removeSource = new Button { Text = "- Remove", Width = 100 };
+            removeSource.Click += (_, _) => RemoveSourceField();
+            var sourceToolbar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 32, WrapContents = false };
+            sourceToolbar.Controls.Add(_sourceField);
+            sourceToolbar.Controls.Add(addSource);
+            sourceToolbar.Controls.Add(removeSource);
+            _right.Dock = DockStyle.Fill;
+            _right.Height = 120;
+            _rightPanel.Controls.Add(_right);
+            _rightPanel.Controls.Add(sourceToolbar);
+            top.Controls.Add(_rightPanel, 3, 4);
 
             var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
             var add = new Button { Text = "Add test", Width = 110 };
@@ -126,6 +144,7 @@ namespace regexFinder
                 _orderBy.Items.Add(field);
                 _previous.Items.Add(field);
                 _current.Items.Add(field);
+                _sourceField.Items.Add(field);
                 _right.Items.Add(field);
             }
             if (_left.Items.Count > 0)
@@ -135,6 +154,7 @@ namespace regexFinder
                 _orderBy.SelectedIndex = 0;
                 _previous.SelectedIndex = 0;
                 _current.SelectedIndex = 0;
+                _sourceField.SelectedIndex = 0;
             }
         }
 
@@ -157,7 +177,7 @@ namespace regexFinder
             var sequence = type == "sequence";
 
             _leftLabel.Visible = _left.Visible = required || comparison || sequence;
-            _rightLabel.Visible = _right.Visible = comparison;
+            _rightLabel.Visible = _rightPanel.Visible = comparison;
             _orderLabel.Visible = _orderBy.Visible = hash || sequence;
             _previousLabel.Visible = _previous.Visible = hash;
             _currentLabel.Visible = _current.Visible = hash;
@@ -165,6 +185,17 @@ namespace regexFinder
 
             _leftLabel.Text = comparison ? "Left field" : "Field";
             _toleranceLabel.Text = sequence ? "Step" : "Tolerance";
+        }
+
+        private void AddSourceField()
+        {
+            var index = _sourceField.SelectedIndex;
+            if (index >= 0) _right.SetItemChecked(index, true);
+        }
+
+        private void RemoveSourceField()
+        {
+            if (_right.SelectedIndex >= 0) _right.SetItemChecked(_right.SelectedIndex, false);
         }
 
         private void AddTest()

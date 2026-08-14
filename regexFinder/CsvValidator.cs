@@ -149,9 +149,10 @@ namespace regexFinder
                     continue;
                 }
 
-                if (Math.Abs((current - previous) - check.Step) > check.Tolerance)
+                var expected = previous + check.Step;
+                if (Math.Abs(current - expected) > check.Tolerance)
                     results.Add(Fail(check, ordered[i].index + 2, GetKey(ordered[i].row),
-                        $"Sequence break: {previous:0.##} -> {current:0.##}."));
+                        $"Current {check.Field}={current:0.##}; previous {previous:0.##}, expected {expected:0.##}."));
             }
         }
 
