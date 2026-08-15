@@ -155,8 +155,11 @@ namespace regexFinder
             var run = new Button { Text = "Run tests", Width = 120, Height = 42 };
             run.Click += (_, _) => RunTests();
             _exportFailures.Click += (_, _) => ExportFailures();
+            var inject = new Button { Text = "Inject corrected CSV", Width = 160 };
+            inject.Click += (_, _) => InjectCorrectedCsv();
             bottom.Controls.Add(run);
             bottom.Controls.Add(_exportFailures);
+            bottom.Controls.Add(inject);
             var split = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Vertical, SplitterDistance = 300 };
             split.Panel1.Controls.Add(_checkList);
             split.Panel2.Controls.Add(_results);
@@ -428,6 +431,36 @@ namespace regexFinder
             }
 
             MessageBox.Show($"Exported {_lastFailures.GroupBy(failure => failure.CheckName).Count()} failed test file sets.");
+        }
+
+        private void InjectCorrectedCsv()
+        {
+            if (!File.Exists(_csvPath.Text))
+            {
+                BrowseCsv();
+                if (!File.Exists(_csvPath.Text)) return;
+            }
+
+            using var correctedDialog = new OpenFileDialog { Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*", Title = "Select corrected CSV" };
+            if (correctedDialog.ShowDialog(this) != DialogResult.OK) return;
+            using var outputDialog = new SaveFileDialog
+            {
+                Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+                DefaultExt = "csv",
+                AddExtension = true,
+                FileName = Path.GetFileNameWithoutExtension(_csvPath.Text) + "_corrected.csv"
+            };
+            if (outputDialog.ShowDialog(this) != DialogResult.OK) return;
+
+            try
+            {
+                var count = CsvInjector.Inject(_csvPath.Text, correctedDialog.FileName, outputDialog.FileName);
+                MessageBox.Show($"Injected {count} rows into {outputDialog.FileName}.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"CSV injection error: {ex.Message}");
+            }
         }
 
         private static string GetRowKey(Dictionary<string, string> row) =>
