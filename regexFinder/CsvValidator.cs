@@ -7,6 +7,12 @@ using System.Text;
 
 namespace regexFinder
 {
+    public sealed class CsvDocument
+    {
+        public List<string> Headers { get; init; } = new();
+        public List<Dictionary<string, string>> Rows { get; init; } = new();
+    }
+
     public sealed class CheckResult
     {
         public string CheckName { get; init; }
@@ -20,6 +26,9 @@ namespace regexFinder
     public static class CsvValidator
     {
         public static List<Dictionary<string, string>> Load(string path)
+            => LoadDocument(path).Rows;
+
+        public static CsvDocument LoadDocument(string path)
         {
             var lines = File.ReadAllLines(path, Encoding.UTF8);
             if (lines.Length == 0) return new();
@@ -29,7 +38,7 @@ namespace regexFinder
             if (headers.Count != headers.Distinct(StringComparer.Ordinal).Count())
                 throw new InvalidDataException("CSV contains duplicate column names.");
 
-            return rows.Skip(1)
+            var data = rows.Skip(1)
                 .Select((values, index) =>
                 {
                     if (values.Count != headers.Count)
@@ -38,6 +47,7 @@ namespace regexFinder
                         .ToDictionary(x => x.header, x => x.value, StringComparer.Ordinal);
                 })
                 .ToList();
+            return new CsvDocument { Headers = headers, Rows = data };
         }
 
         public static List<CheckResult> Run(

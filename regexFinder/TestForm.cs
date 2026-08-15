@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -12,6 +13,8 @@ namespace regexFinder
     public sealed class TestForm : Form
     {
         private readonly List<string> _fields;
+        private readonly IReadOnlyList<PatternDefinition> _patterns;
+        private readonly IReadOnlyList<string> _sourceLines;
         private readonly List<CheckDefinition> _checks = new();
         private readonly ComboBox _type = new();
         private readonly ComboBox _left = new();
@@ -36,10 +39,21 @@ namespace regexFinder
         private Label _ignoredTypesLabel;
         private readonly ListBox _checkList = new();
         private readonly DataGridView _results = new();
+        private readonly Button _exportFailures = new() { Text = "Export failed", Width = 130, Enabled = false };
+        private CsvDocument _lastDocument;
+        private List<CheckResult> _lastFailures = new();
+        private SourceCheckIndex _sourceIndex;
 
-        public TestForm(IEnumerable<string> fields, string initialCsvPath = null)
+        public TestForm(
+            IEnumerable<string> fields,
+            string initialCsvPath = null,
+            IReadOnlyList<PatternDefinition> patterns = null,
+            IReadOnlyList<string> sourceLines = null)
         {
             _fields = fields.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.Ordinal).ToList();
+            _patterns = patterns ?? Array.Empty<PatternDefinition>();
+            _sourceLines = sourceLines ?? Array.Empty<string>();
+            _sourceIndex = new SourceCheckIndex(_sourceLines, _patterns);
             Text = "CSV Tests";
             StartPosition = FormStartPosition.CenterParent;
             Width = 1300;
@@ -137,13 +151,17 @@ namespace regexFinder
             _results.Columns.Add("Key", "Key");
             _results.Columns.Add("Message", "Message");
 
-            var run = new Button { Text = "Run tests", Dock = DockStyle.Bottom, Height = 42 };
+            var bottom = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 48, WrapContents = false };
+            var run = new Button { Text = "Run tests", Width = 120, Height = 42 };
             run.Click += (_, _) => RunTests();
+            _exportFailures.Click += (_, _) => ExportFailures();
+            bottom.Controls.Add(run);
+            bottom.Controls.Add(_exportFailures);
             var split = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Vertical, SplitterDistance = 300 };
             split.Panel1.Controls.Add(_checkList);
             split.Panel2.Controls.Add(_results);
             Controls.Add(split);
-            Controls.Add(run);
+            Controls.Add(bottom);
             Controls.Add(top);
             UpdateEditor();
         }
@@ -363,22 +381,57 @@ namespace regexFinder
 
             try
             {
-                var rows = CsvValidator.Load(_csvPath.Text);
-                var failures = CsvValidator.Run(rows, _checks);
+                _lastDocument = CsvValidator.LoadDocument(_csvPath.Text);
+                _lastFailures = CsvValidator.Run(_lastDocument.Rows, _checks);
                 _results.Rows.Clear();
-                foreach (var failure in failures)
+                foreach (var failure in _lastFailures)
                 {
                     var index = _results.Rows.Add(failure.CheckName, failure.Row, failure.Key, failure.Message);
                     _results.Rows[index].DefaultCellStyle.BackColor = Color.MistyRose;
                 }
-                if (failures.Count == 0)
-                    MessageBox.Show($"All tests passed. Rows checked: {rows.Count}.");
+                _exportFailures.Enabled = _lastFailures.Count > 0;
+                if (_lastFailures.Count == 0)
+                    MessageBox.Show($"All tests passed. Rows checked: {_lastDocument.Rows.Count}.");
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"CSV test error: {ex.Message}");
             }
         }
+
+        private void ExportFailures()
+        {
+            if (_lastDocument == null || _lastFailures.Count == 0) return;
+            using var dialog = new FolderBrowserDialog { Description = "Select a folder for failed test files" };
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+            foreach (var group in _lastFailures.GroupBy(failure => failure.CheckName))
+            {
+                var keys = group.SelectMany(failure => failure.RelatedKeys ?? new())
+                    .Concat(group.Select(failure => failure.Key))
+                    .Where(key => !string.IsNullOrWhiteSpace(key))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                var rows = _lastDocument.Rows
+                    .Where(row => keys.Contains(GetRowKey(row), StringComparer.OrdinalIgnoreCase))
+                    .ToList();
+                var safeName = string.Join("_", group.Key.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+                if (string.IsNullOrWhiteSpace(safeName)) safeName = "failed_test";
+
+                var csvRows = new List<List<string>> { _lastDocument.Headers };
+                csvRows.AddRange(rows.Select(row => _lastDocument.Headers.Select(header =>
+                    row.TryGetValue(header, out var value) ? value : string.Empty).ToList()));
+                new CsvExporter().ExportResultToCsv(csvRows, Path.Combine(dialog.SelectedPath, safeName + ".csv"));
+
+                var textLines = _sourceIndex.GetBlocks(keys).SelectMany(block => block.Concat(new[] { string.Empty })).ToArray();
+                File.WriteAllLines(Path.Combine(dialog.SelectedPath, safeName + ".txt"), textLines, Encoding.UTF8);
+            }
+
+            MessageBox.Show($"Exported {_lastFailures.GroupBy(failure => failure.CheckName).Count()} failed test file sets.");
+        }
+
+        private static string GetRowKey(Dictionary<string, string> row) =>
+            row.TryGetValue("Ceka numurs", out var key) ? key : string.Empty;
 
         private static double ParseDouble(string text, double fallback) =>
             double.TryParse(text.Replace(',', '.'), System.Globalization.NumberStyles.Any,

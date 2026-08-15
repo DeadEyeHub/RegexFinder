@@ -123,7 +123,7 @@ namespace regexFinder
         {
             var fields = _patternList?.Select(p => p.Name).Where(n => !string.Equals(n, "Splitter", StringComparison.OrdinalIgnoreCase))
                 ?? Enumerable.Empty<string>();
-            using var testForm = new TestForm(fields);
+            using var testForm = new TestForm(fields, patterns: _patternList, sourceLines: _lines);
             testForm.ShowDialog(this);
         }
 
