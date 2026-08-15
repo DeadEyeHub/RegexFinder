@@ -88,10 +88,28 @@ namespace regexFinder
         {
             for (var i = 0; i < rows.Count; i++)
             {
+                if ((check.IgnoreReceiptTypes ?? new()).Contains(Get(rows[i], "Ceka tips"), StringComparer.OrdinalIgnoreCase))
+                    continue;
+
+                var selectedFields = new[] { check.Left }
+                    .Concat(check.Right ?? new())
+                    .Concat(check.Subtract ?? new())
+                    .Where(field => !string.IsNullOrWhiteSpace(field))
+                    .Distinct(StringComparer.Ordinal)
+                    .ToList();
+                var emptyFields = selectedFields.Where(field => string.IsNullOrWhiteSpace(Get(rows[i], field))).ToList();
+                if (emptyFields.Count == selectedFields.Count && selectedFields.Count > 0)
+                {
+                    results.Add(Fail(check, i + 2, GetKey(rows[i]), "All fields empty."));
+                    continue;
+                }
                 var actualText = Get(rows[i], check.Left);
                 if (!TryNumber(actualText, out var actual))
                 {
-                    results.Add(Fail(check, i + 2, GetKey(rows[i]), $"'{check.Left}' is not a number."));
+                    var details = emptyFields.Count > 0
+                        ? $" Empty fields: {string.Join(", ", emptyFields)}."
+                        : string.Empty;
+                    results.Add(Fail(check, i + 2, GetKey(rows[i]), $"'{check.Left}' is not a number.{details}"));
                     continue;
                 }
 
@@ -107,14 +125,34 @@ namespace regexFinder
                         expected += value;
                 }
 
+                foreach (var field in check.Subtract ?? new())
+                {
+                    var text = Get(rows[i], field);
+                    if (string.IsNullOrWhiteSpace(text)) continue;
+                    if (!TryNumber(text, out var value))
+                        missing.Add(field);
+                    else
+                        expected -= value;
+                }
+
                 if (missing.Count > 0)
                 {
-                    results.Add(Fail(check, i + 2, GetKey(rows[i]), $"Non-numeric fields: {string.Join(", ", missing)}."));
+                    var emptyDetails = emptyFields.Count > 0
+                        ? $" Empty fields: {string.Join(", ", emptyFields)}."
+                        : string.Empty;
+                    results.Add(Fail(check, i + 2, GetKey(rows[i]),
+                        $"Non-numeric fields: {string.Join(", ", missing)}.{emptyDetails}"));
                     continue;
                 }
 
                 if (Math.Abs(actual - expected) > check.Tolerance)
-                    results.Add(Fail(check, i + 2, GetKey(rows[i]), $"{check.Left}={actual:0.00}; expected {expected:0.00}."));
+                {
+                    var emptyDetails = emptyFields.Count > 0
+                        ? $" Empty fields: {string.Join(", ", emptyFields)}."
+                        : string.Empty;
+                    results.Add(Fail(check, i + 2, GetKey(rows[i]),
+                        $"{check.Left}={actual:0.00}; expected {expected:0.00}.{emptyDetails}"));
+                }
             }
         }
 

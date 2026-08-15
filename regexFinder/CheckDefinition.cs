@@ -9,6 +9,8 @@ namespace regexFinder
         public string Field { get; set; }
         public string Left { get; set; }
         public List<string> Right { get; set; } = new();
+        public List<string> Subtract { get; set; } = new();
+        public List<string> IgnoreReceiptTypes { get; set; } = new();
         public double Tolerance { get; set; } = 0.01;
         public string OrderBy { get; set; }
         public string PreviousField { get; set; }
