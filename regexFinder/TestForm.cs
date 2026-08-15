@@ -19,8 +19,9 @@ namespace regexFinder
         private readonly ComboBox _orderBy = new();
         private readonly ComboBox _previous = new();
         private readonly ComboBox _current = new();
-        private readonly CheckedListBox _right = new();
-        private readonly ComboBox _sourceField = new();
+        private readonly CheckedListBox _availableFields = new();
+        private readonly CheckedListBox _ignoredTypes = new();
+        private readonly ListBox _terms = new();
         private readonly TextBox _name = new();
         private readonly TextBox _csvPath = new();
         private readonly TextBox _tolerance = new();
@@ -31,10 +32,12 @@ namespace regexFinder
         private Label _toleranceLabel;
         private Label _rightLabel;
         private Panel _rightPanel;
+        private Label _termsLabel;
+        private Label _ignoredTypesLabel;
         private readonly ListBox _checkList = new();
         private readonly DataGridView _results = new();
 
-        public TestForm(IEnumerable<string> fields)
+        public TestForm(IEnumerable<string> fields, string initialCsvPath = null)
         {
             _fields = fields.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.Ordinal).ToList();
             Text = "CSV Tests";
@@ -42,13 +45,15 @@ namespace regexFinder
             Width = 1300;
             Height = 780;
             _tolerance.Text = "0.01";
+            _csvPath.Text = initialCsvPath ?? FindLatestCsv();
             BuildControls();
             FillFields();
+            LoadReceiptTypes(_csvPath.Text);
         }
 
         private void BuildControls()
         {
-            var top = new TableLayoutPanel { Dock = DockStyle.Top, Height = 220, ColumnCount = 4, RowCount = 6, Padding = new Padding(8) };
+            var top = new TableLayoutPanel { Dock = DockStyle.Top, Height = 480, ColumnCount = 4, RowCount = 8, Padding = new Padding(8) };
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
@@ -71,24 +76,32 @@ namespace regexFinder
             _previousLabel = Add(top, "Previous hash", _previous, 0, 3, 1);
             _currentLabel = Add(top, "Current hash", _current, 2, 3, 1);
             _toleranceLabel = Add(top, "Tolerance / step", _tolerance, 0, 4, 1);
-            _rightLabel = new Label { Text = "Fields to sum", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
+            _rightLabel = new Label { Text = "Available fields", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
             top.Controls.Add(_rightLabel, 2, 4);
             _rightPanel = new Panel { Dock = DockStyle.Fill };
-            _sourceField.DropDownStyle = ComboBoxStyle.DropDownList;
-            _sourceField.Width = 210;
-            var addSource = new Button { Text = "+ Add field", Width = 100 };
-            addSource.Click += (_, _) => AddSourceField();
-            var removeSource = new Button { Text = "- Remove", Width = 100 };
-            removeSource.Click += (_, _) => RemoveSourceField();
+            var addSource = new Button { Text = "+ Add field", Width = 110 };
+            addSource.Click += (_, _) => AddSourceField(false);
+            var removeSource = new Button { Text = "- Remove field", Width = 120 };
+            removeSource.Click += (_, _) => AddSourceField(true);
             var sourceToolbar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 32, WrapContents = false };
-            sourceToolbar.Controls.Add(_sourceField);
+            sourceToolbar.Controls.Add(new Label { Text = "Select fields below, then:", AutoSize = true, Padding = new Padding(0, 7, 8, 0) });
             sourceToolbar.Controls.Add(addSource);
             sourceToolbar.Controls.Add(removeSource);
-            _right.Dock = DockStyle.Fill;
-            _right.Height = 120;
-            _rightPanel.Controls.Add(_right);
+            _availableFields.Dock = DockStyle.Fill;
+            _availableFields.Height = 145;
+            _rightPanel.Controls.Add(_availableFields);
             _rightPanel.Controls.Add(sourceToolbar);
             top.Controls.Add(_rightPanel, 3, 4);
+            _termsLabel = new Label { Text = "Formula terms", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
+            top.Controls.Add(_termsLabel, 2, 5);
+            _terms.Dock = DockStyle.Fill;
+            _terms.Height = 75;
+            top.Controls.Add(_terms, 3, 5);
+            _ignoredTypesLabel = new Label { Text = "Ignore receipt types", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
+            top.Controls.Add(_ignoredTypesLabel, 0, 5);
+            _ignoredTypes.Dock = DockStyle.Fill;
+            _ignoredTypes.Height = 75;
+            top.Controls.Add(_ignoredTypes, 1, 5);
 
             var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
             var add = new Button { Text = "Add test", Width = 110 };
@@ -111,7 +124,7 @@ namespace regexFinder
             actions.Controls.Add(remove);
             actions.Controls.Add(save);
             actions.Controls.Add(load);
-            top.Controls.Add(actions, 0, 5);
+            top.Controls.Add(actions, 0, 7);
             top.SetColumnSpan(actions, 4);
 
             _checkList.Dock = DockStyle.Fill;
@@ -144,8 +157,7 @@ namespace regexFinder
                 _orderBy.Items.Add(field);
                 _previous.Items.Add(field);
                 _current.Items.Add(field);
-                _sourceField.Items.Add(field);
-                _right.Items.Add(field);
+                _availableFields.Items.Add(field);
             }
             if (_left.Items.Count > 0)
             {
@@ -154,7 +166,6 @@ namespace regexFinder
                 _orderBy.SelectedIndex = 0;
                 _previous.SelectedIndex = 0;
                 _current.SelectedIndex = 0;
-                _sourceField.SelectedIndex = 0;
             }
         }
 
@@ -177,25 +188,26 @@ namespace regexFinder
             var sequence = type == "sequence";
 
             _leftLabel.Visible = _left.Visible = required || comparison || sequence;
-            _rightLabel.Visible = _rightPanel.Visible = comparison;
+            _rightLabel.Visible = _rightPanel.Visible = _termsLabel.Visible = _terms.Visible = comparison;
+            _ignoredTypesLabel.Visible = _ignoredTypes.Visible = comparison;
             _orderLabel.Visible = _orderBy.Visible = hash || sequence;
             _previousLabel.Visible = _previous.Visible = hash;
             _currentLabel.Visible = _current.Visible = hash;
             _toleranceLabel.Visible = _tolerance.Visible = comparison || sequence;
 
-            _leftLabel.Text = comparison ? "Left field" : "Field";
+            _leftLabel.Text = comparison ? "Field to compare" : "Field";
             _toleranceLabel.Text = sequence ? "Step" : "Tolerance";
         }
 
-        private void AddSourceField()
+        private void AddSourceField(bool subtract)
         {
-            var index = _sourceField.SelectedIndex;
-            if (index >= 0) _right.SetItemChecked(index, true);
-        }
-
-        private void RemoveSourceField()
-        {
-            if (_right.SelectedIndex >= 0) _right.SetItemChecked(_right.SelectedIndex, false);
+            var fields = _availableFields.CheckedItems.Cast<string>().ToList();
+            foreach (var field in fields)
+            {
+                var prefix = subtract ? "-" : "+";
+                _terms.Items.Add($"{prefix} {field}");
+                _availableFields.SetItemChecked(_availableFields.Items.IndexOf(field), false);
+            }
         }
 
         private void AddTest()
@@ -211,13 +223,18 @@ namespace regexFinder
             if (_type.Text == "comparison")
             {
                 check.Left = _left.Text;
-                check.Right = _right.CheckedItems.Cast<string>().ToList();
-                if (check.Right.Count == 0)
+                foreach (var term in _terms.Items.Cast<string>())
                 {
-                    MessageBox.Show("Select at least one field to sum.");
+                    if (term.StartsWith("+ ", StringComparison.Ordinal)) check.Right.Add(term[2..]);
+                    if (term.StartsWith("- ", StringComparison.Ordinal)) check.Subtract.Add(term[2..]);
+                }
+                if (check.Right.Count == 0 && check.Subtract.Count == 0)
+                {
+                    MessageBox.Show("Add at least one field to the formula.");
                     return;
                 }
                 check.Tolerance = ParseDouble(_tolerance.Text, 0.01);
+                check.IgnoreReceiptTypes = _ignoredTypes.CheckedItems.Cast<string>().ToList();
             }
             if (_type.Text == "hashSequence")
             {
@@ -240,7 +257,25 @@ namespace regexFinder
         private void BrowseCsv()
         {
             using var dialog = new OpenFileDialog { Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*" };
-            if (dialog.ShowDialog(this) == DialogResult.OK) _csvPath.Text = dialog.FileName;
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                _csvPath.Text = dialog.FileName;
+                LoadReceiptTypes(_csvPath.Text);
+            }
+        }
+
+        private void LoadReceiptTypes(string path)
+        {
+            if (!File.Exists(path)) return;
+            var rows = CsvValidator.Load(path);
+            var types = rows.Select(row => row.TryGetValue("Ceka tips", out var value) ? value : string.Empty)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var selected = _ignoredTypes.CheckedItems.Cast<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
+            _ignoredTypes.Items.Clear();
+            foreach (var type in types) _ignoredTypes.Items.Add(type, selected.Contains(type));
         }
 
         private void RemoveTest()
@@ -281,6 +316,21 @@ namespace regexFinder
             _checks.AddRange(checks);
             _checkList.Items.Clear();
             foreach (var check in _checks) _checkList.Items.Add(check.Name);
+        }
+
+        private static string FindLatestCsv()
+        {
+            var directories = new List<string>();
+            var current = new DirectoryInfo(Application.StartupPath);
+            for (var i = 0; i < 5 && current != null; i++, current = current.Parent)
+                directories.Add(Path.Combine(current.FullName, "results"));
+
+            return directories.SelectMany(directory =>
+                    Directory.Exists(directory)
+                        ? Directory.EnumerateFiles(directory, "*.csv")
+                        : Enumerable.Empty<string>())
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .FirstOrDefault() ?? string.Empty;
         }
 
         private void RunTests()
