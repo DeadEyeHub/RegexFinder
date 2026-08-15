@@ -16,5 +16,12 @@ namespace regexFinder
         public string PreviousField { get; set; }
         public string CurrentField { get; set; }
         public double Step { get; set; } = 1;
+        public string AmountField { get; set; }
+        public string TotalField { get; set; }
+        public string ReceiptTypeField { get; set; }
+        public List<string> IncludedReceiptTypes { get; set; } = new();
+        public string ExcludeIfField { get; set; }
+        public bool ExcludeIfNonZero { get; set; }
+        public bool Cumulative { get; set; } = true;
     }
 }

@@ -14,6 +14,7 @@ namespace regexFinder
         public string Key { get; init; }
         public string Message { get; init; }
         public bool Passed { get; init; }
+        public List<string> RelatedKeys { get; init; } = new();
     }
 
     public static class CsvValidator
@@ -59,6 +60,9 @@ namespace regexFinder
                         break;
                     case "sequence":
                         RunSequence(rows, check, results);
+                        break;
+                    case "grandtotalreconciliation":
+                        RunGrandTotal(rows, check, results);
                         break;
                     default:
                         results.Add(Fail(check, 0, "", $"Unknown test type: {check.Type}"));
@@ -194,6 +198,74 @@ namespace regexFinder
             }
         }
 
+        private static void RunGrandTotal(
+            IReadOnlyList<Dictionary<string, string>> rows,
+            CheckDefinition check,
+            List<CheckResult> results)
+        {
+            var checkpointStart = 0;
+            var accumulated = 0d;
+            var checkpoints = 0;
+
+            for (var i = 0; i < rows.Count; i++)
+            {
+                if (!TryNumber(Get(rows[i], check.TotalField), out var total)) continue;
+
+                var rangeRows = rows.Skip(checkpointStart).Take(i - checkpointStart).ToList();
+                var rangeKeys = rangeRows.Select(GetKey).Where(key => !string.IsNullOrWhiteSpace(key)).ToList();
+                var values = new List<double>();
+                var invalidRows = new List<string>();
+
+                foreach (var row in rangeRows)
+                {
+                    if (!IsIncludedReceipt(row, check)) continue;
+                    if (IsExcludedReceipt(row, check)) continue;
+                    var key = GetKey(row);
+                    var amount = Get(row, check.AmountField);
+                    if (!TryNumber(amount, out var value))
+                    {
+                        if (!string.IsNullOrWhiteSpace(key)) invalidRows.Add(key);
+                        continue;
+                    }
+                    values.Add(value);
+                }
+
+                if (invalidRows.Count > 0)
+                {
+                    results.Add(Fail(check, i + 2, GetKey(rows[i]),
+                        $"Non-numeric {check.AmountField} in checks: {string.Join(", ", invalidRows)}.", rangeKeys));
+                }
+
+                var rangeTotal = values.Sum();
+                accumulated += rangeTotal;
+                var expected = check.Cumulative ? accumulated : rangeTotal;
+                if (Math.Abs(total - expected) > check.Tolerance)
+                {
+                    results.Add(Fail(check, i + 2, GetKey(rows[i]),
+                        $"{check.TotalField}={total:0.00}; expected {expected:0.00}; range {rangeTotal:0.00}.", rangeKeys));
+                }
+
+                checkpoints++;
+                checkpointStart = i + 1;
+            }
+
+            if (checkpoints == 0)
+                results.Add(Fail(check, 0, "", $"No rows contain '{check.TotalField}'."));
+        }
+
+        private static bool IsIncludedReceipt(Dictionary<string, string> row, CheckDefinition check)
+        {
+            if (check.IncludedReceiptTypes == null || check.IncludedReceiptTypes.Count == 0) return true;
+            return check.IncludedReceiptTypes.Contains(Get(row, check.ReceiptTypeField), StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static bool IsExcludedReceipt(Dictionary<string, string> row, CheckDefinition check)
+        {
+            if (!check.ExcludeIfNonZero || string.IsNullOrWhiteSpace(check.ExcludeIfField)) return false;
+            var value = Get(row, check.ExcludeIfField);
+            return TryNumber(value, out var number) ? Math.Abs(number) > check.Tolerance : !string.IsNullOrWhiteSpace(value);
+        }
+
         private static List<(Dictionary<string, string> row, int index)> OrderRows(
             IReadOnlyList<Dictionary<string, string>> rows, string orderBy)
         {
@@ -240,13 +312,14 @@ namespace regexFinder
         private static string GetKey(Dictionary<string, string> row) =>
             Get(row, "Ceka numurs");
 
-        private static CheckResult Fail(CheckDefinition check, int row, string key, string message) => new()
+        private static CheckResult Fail(CheckDefinition check, int row, string key, string message, List<string> relatedKeys = null) => new()
         {
             CheckName = check.Name,
             Row = row,
             Key = key,
             Message = message,
-            Passed = false
+            Passed = false,
+            RelatedKeys = relatedKeys ?? (string.IsNullOrWhiteSpace(key) ? new() : new() { key })
         };
     }
 }
