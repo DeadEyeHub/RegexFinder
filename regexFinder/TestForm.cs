@@ -39,7 +39,7 @@ namespace regexFinder
         private Label _ignoredTypesLabel;
         private readonly ListBox _checkList = new();
         private readonly DataGridView _results = new();
-        private readonly Button _exportFailures = new() { Text = "Export failed", Width = 130, Enabled = false };
+        private readonly Button _exportFailures = new() { Text = "Export failures", Width = 130, Enabled = false };
         private CsvDocument _lastDocument;
         private List<CheckResult> _lastFailures = new();
         private SourceCheckIndex _sourceIndex;
@@ -54,7 +54,7 @@ namespace regexFinder
             _patterns = patterns ?? Array.Empty<PatternDefinition>();
             _sourceLines = sourceLines ?? Array.Empty<string>();
             _sourceIndex = new SourceCheckIndex(_sourceLines, _patterns);
-            Text = "CSV Tests";
+            Text = "CSV Validation Tests";
             StartPosition = FormStartPosition.CenterParent;
             Width = 1300;
             Height = 780;
@@ -73,7 +73,7 @@ namespace regexFinder
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65));
 
-            Add(top, "CSV file", _csvPath, 0, 0, 2);
+            Add(top, "CSV to check", _csvPath, 0, 0, 2);
             var browse = new Button { Text = "Browse...", Dock = DockStyle.Fill };
             browse.Click += (_, _) => BrowseCsv();
             top.Controls.Add(browse, 3, 0);
@@ -81,14 +81,21 @@ namespace regexFinder
             Add(top, "Test name", _name, 0, 1, 1);
             Add(top, "Test type", _type, 2, 1, 1);
             _type.DropDownStyle = ComboBoxStyle.DropDownList;
-            _type.Items.AddRange(new object[] { "required", "comparison", "hashSequence", "sequence", "grandTotalReconciliation" });
+            _type.Items.AddRange(new object[]
+            {
+                "Required field",
+                "Compare fields",
+                "Hash chain",
+                "Number sequence",
+                "Grand total check"
+            });
             _type.SelectedIndex = 0;
             _type.SelectedIndexChanged += (_, _) => UpdateEditor();
 
             _leftLabel = Add(top, "Field / left", _left, 0, 2, 1);
             _orderLabel = Add(top, "Order by", _orderBy, 2, 2, 1);
-            _previousLabel = Add(top, "Previous hash", _previous, 0, 3, 1);
-            _currentLabel = Add(top, "Current hash", _current, 2, 3, 1);
+            _previousLabel = Add(top, "Previous hash field", _previous, 0, 3, 1);
+            _currentLabel = Add(top, "Current hash field", _current, 2, 3, 1);
             _toleranceLabel = Add(top, "Tolerance / step", _tolerance, 0, 4, 1);
             _rightLabel = new Label { Text = "Available fields", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
             top.Controls.Add(_rightLabel, 2, 4);
@@ -98,7 +105,7 @@ namespace regexFinder
             var removeSource = new Button { Text = "- Remove field", Width = 120 };
             removeSource.Click += (_, _) => AddSourceField(true);
             var sourceToolbar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 32, WrapContents = false };
-            sourceToolbar.Controls.Add(new Label { Text = "Select fields below, then:", AutoSize = true, Padding = new Padding(0, 7, 8, 0) });
+            sourceToolbar.Controls.Add(new Label { Text = "Select columns, then:", AutoSize = true, Padding = new Padding(0, 7, 8, 0) });
             sourceToolbar.Controls.Add(addSource);
             sourceToolbar.Controls.Add(removeSource);
             _availableFields.Dock = DockStyle.Fill;
@@ -118,17 +125,17 @@ namespace regexFinder
             top.Controls.Add(_ignoredTypes, 1, 5);
 
             var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
-            var add = new Button { Text = "Add test", Width = 110 };
+            var add = new Button { Text = "Add check", Width = 110 };
             add.Click += (_, _) => AddTest();
-            var remove = new Button { Text = "Remove", Width = 90 };
+            var remove = new Button { Text = "Delete check", Width = 100 };
             remove.Click += (_, _) => RemoveTest();
-            var save = new Button { Text = "Save tests", Width = 100 };
+            var save = new Button { Text = "Save checks", Width = 105 };
             save.Click += (_, _) =>
             {
                 try { SaveTests(); }
                 catch (Exception ex) { MessageBox.Show($"Cannot save tests: {ex.Message}"); }
             };
-            var load = new Button { Text = "Load tests", Width = 100 };
+            var load = new Button { Text = "Load checks", Width = 105 };
             load.Click += (_, _) =>
             {
                 try { LoadTests(); }
@@ -152,10 +159,10 @@ namespace regexFinder
             _results.Columns.Add("Message", "Message");
 
             var bottom = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 48, WrapContents = false };
-            var run = new Button { Text = "Run tests", Width = 120, Height = 42 };
+            var run = new Button { Text = "Run checks", Width = 120, Height = 42 };
             run.Click += (_, _) => RunTests();
             _exportFailures.Click += (_, _) => ExportFailures();
-            var inject = new Button { Text = "Inject corrected CSV", Width = 160 };
+            var inject = new Button { Text = "Inject corrected CSV", Width = 170 };
             inject.Click += (_, _) => InjectCorrectedCsv();
             bottom.Controls.Add(run);
             bottom.Controls.Add(_exportFailures);
@@ -200,9 +207,19 @@ namespace regexFinder
             return labelControl;
         }
 
+        private string SelectedType => _type.SelectedIndex switch
+        {
+            0 => "required",
+            1 => "comparison",
+            2 => "hashSequence",
+            3 => "sequence",
+            4 => "grandTotalReconciliation",
+            _ => string.Empty
+        };
+
         private void UpdateEditor()
         {
-            var type = _type.Text;
+            var type = SelectedType;
             var required = type == "required";
             var comparison = type == "comparison";
             var hash = type == "hashSequence";
@@ -220,9 +237,9 @@ namespace regexFinder
             _leftLabel.Text = comparison ? "Field to compare" : grandTotal ? "Amount field" : "Field";
             _orderLabel.Text = grandTotal ? "Total field" : "Order by";
             _previousLabel.Text = grandTotal ? "Receipt type field" : "Previous hash";
-            _currentLabel.Text = grandTotal ? "Exclude if nonzero" : "Current hash";
+            _currentLabel.Text = grandTotal ? "Exclude when nonzero" : "Current hash field";
             _ignoredTypesLabel.Text = grandTotal ? "Included receipt types" : "Ignore receipt types";
-            _toleranceLabel.Text = sequence ? "Step" : "Tolerance";
+            _toleranceLabel.Text = sequence ? "Sequence step" : "Tolerance";
         }
 
         private void AddSourceField(bool subtract)
@@ -244,9 +261,10 @@ namespace regexFinder
                 return;
             }
 
-            var check = new CheckDefinition { Name = _name.Text.Trim(), Type = _type.Text };
-            if (_type.Text == "required" || _type.Text == "sequence") check.Field = _left.Text;
-            if (_type.Text == "comparison")
+            var type = SelectedType;
+            var check = new CheckDefinition { Name = _name.Text.Trim(), Type = type };
+            if (type == "required" || type == "sequence") check.Field = _left.Text;
+            if (type == "comparison")
             {
                 check.Left = _left.Text;
                 foreach (var term in _terms.Items.Cast<string>())
@@ -262,19 +280,19 @@ namespace regexFinder
                 check.Tolerance = ParseDouble(_tolerance.Text, 0.01);
                 check.IgnoreReceiptTypes = _ignoredTypes.CheckedItems.Cast<string>().ToList();
             }
-            if (_type.Text == "hashSequence")
+            if (type == "hashSequence")
             {
                 check.OrderBy = _orderBy.Text;
                 check.PreviousField = _previous.Text;
                 check.CurrentField = _current.Text;
             }
-            if (_type.Text == "sequence")
+            if (type == "sequence")
             {
                 check.OrderBy = _orderBy.Text;
                 check.Step = ParseDouble(_tolerance.Text, 1);
                 check.Tolerance = 0.01;
             }
-            if (_type.Text == "grandTotalReconciliation")
+            if (type == "grandTotalReconciliation")
             {
                 check.AmountField = _left.Text;
                 check.TotalField = _orderBy.Text;
