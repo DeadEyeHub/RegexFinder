@@ -67,7 +67,7 @@ namespace regexFinder
             Add(top, "Test name", _name, 0, 1, 1);
             Add(top, "Test type", _type, 2, 1, 1);
             _type.DropDownStyle = ComboBoxStyle.DropDownList;
-            _type.Items.AddRange(new object[] { "required", "comparison", "hashSequence", "sequence" });
+            _type.Items.AddRange(new object[] { "required", "comparison", "hashSequence", "sequence", "grandTotalReconciliation" });
             _type.SelectedIndex = 0;
             _type.SelectedIndexChanged += (_, _) => UpdateEditor();
 
@@ -186,16 +186,21 @@ namespace regexFinder
             var comparison = type == "comparison";
             var hash = type == "hashSequence";
             var sequence = type == "sequence";
+            var grandTotal = type == "grandTotalReconciliation";
 
-            _leftLabel.Visible = _left.Visible = required || comparison || sequence;
+            _leftLabel.Visible = _left.Visible = required || comparison || sequence || grandTotal;
             _rightLabel.Visible = _rightPanel.Visible = _termsLabel.Visible = _terms.Visible = comparison;
-            _ignoredTypesLabel.Visible = _ignoredTypes.Visible = comparison;
-            _orderLabel.Visible = _orderBy.Visible = hash || sequence;
-            _previousLabel.Visible = _previous.Visible = hash;
-            _currentLabel.Visible = _current.Visible = hash;
-            _toleranceLabel.Visible = _tolerance.Visible = comparison || sequence;
+            _ignoredTypesLabel.Visible = _ignoredTypes.Visible = comparison || grandTotal;
+            _orderLabel.Visible = _orderBy.Visible = hash || sequence || grandTotal;
+            _previousLabel.Visible = _previous.Visible = hash || grandTotal;
+            _currentLabel.Visible = _current.Visible = hash || grandTotal;
+            _toleranceLabel.Visible = _tolerance.Visible = comparison || sequence || grandTotal;
 
-            _leftLabel.Text = comparison ? "Field to compare" : "Field";
+            _leftLabel.Text = comparison ? "Field to compare" : grandTotal ? "Amount field" : "Field";
+            _orderLabel.Text = grandTotal ? "Total field" : "Order by";
+            _previousLabel.Text = grandTotal ? "Receipt type field" : "Previous hash";
+            _currentLabel.Text = grandTotal ? "Exclude if nonzero" : "Current hash";
+            _ignoredTypesLabel.Text = grandTotal ? "Included receipt types" : "Ignore receipt types";
             _toleranceLabel.Text = sequence ? "Step" : "Tolerance";
         }
 
@@ -247,6 +252,16 @@ namespace regexFinder
                 check.OrderBy = _orderBy.Text;
                 check.Step = ParseDouble(_tolerance.Text, 1);
                 check.Tolerance = 0.01;
+            }
+            if (_type.Text == "grandTotalReconciliation")
+            {
+                check.AmountField = _left.Text;
+                check.TotalField = _orderBy.Text;
+                check.ReceiptTypeField = _previous.Text;
+                check.IncludedReceiptTypes = _ignoredTypes.CheckedItems.Cast<string>().ToList();
+                check.ExcludeIfField = _current.Text;
+                check.ExcludeIfNonZero = !string.IsNullOrWhiteSpace(check.ExcludeIfField);
+                check.Tolerance = ParseDouble(_tolerance.Text, 0.01);
             }
 
             _checks.Add(check);
