@@ -219,7 +219,12 @@ namespace regexFinder
 
             for (var i = 0; i < rows.Count; i++)
             {
-                if (!TryNumber(Get(rows[i], check.TotalField), out var total)) continue;
+                var receiptType = Get(rows[i], check.ReceiptTypeField);
+                var checkpointTypes = check.CheckpointReceiptTypes ?? new();
+                var isCheckpoint = checkpointTypes.Count > 0
+                    ? checkpointTypes.Contains(receiptType, StringComparer.OrdinalIgnoreCase)
+                    : TryNumber(Get(rows[i], check.TotalField), out _);
+                if (!isCheckpoint || !TryNumber(Get(rows[i], check.AmountField), out var total)) continue;
 
                 var rangeRows = rows.Skip(checkpointStart).Take(i - checkpointStart).ToList();
                 var rangeKeys = rangeRows.Select(GetKey).Where(key => !string.IsNullOrWhiteSpace(key)).ToList();
@@ -252,7 +257,7 @@ namespace regexFinder
                 if (Math.Abs(total - expected) > check.Tolerance)
                 {
                     results.Add(Fail(check, i + 2, GetKey(rows[i]),
-                        $"{check.TotalField}={total:0.00}; expected {expected:0.00}; range {rangeTotal:0.00}.", rangeKeys));
+                        $"{check.AmountField}={total:0.00}; expected {expected:0.00}; range {rangeTotal:0.00}.", rangeKeys));
                 }
 
                 checkpoints++;
@@ -260,7 +265,7 @@ namespace regexFinder
             }
 
             if (checkpoints == 0)
-                results.Add(Fail(check, 0, "", $"No rows contain '{check.TotalField}'."));
+                results.Add(Fail(check, 0, "", $"No checkpoint rows found for '{check.AmountField}'."));
         }
 
         private static bool IsIncludedReceipt(Dictionary<string, string> row, CheckDefinition check)

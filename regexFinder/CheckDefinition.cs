@@ -20,6 +20,7 @@ namespace regexFinder
         public string TotalField { get; set; }
         public string ReceiptTypeField { get; set; }
         public List<string> IncludedReceiptTypes { get; set; } = new();
+        public List<string> CheckpointReceiptTypes { get; set; } = new();
         public string ExcludeIfField { get; set; }
         public bool ExcludeIfNonZero { get; set; }
         public bool Cumulative { get; set; } = true;

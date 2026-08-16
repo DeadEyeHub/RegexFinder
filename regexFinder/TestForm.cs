@@ -24,6 +24,7 @@ namespace regexFinder
         private readonly ComboBox _current = new();
         private readonly CheckedListBox _availableFields = new();
         private readonly CheckedListBox _ignoredTypes = new();
+        private readonly CheckedListBox _checkpointTypes = new();
         private readonly ListBox _terms = new();
         private readonly TextBox _name = new();
         private readonly TextBox _csvPath = new();
@@ -37,6 +38,7 @@ namespace regexFinder
         private Panel _rightPanel;
         private Label _termsLabel;
         private Label _ignoredTypesLabel;
+        private Label _checkpointTypesLabel;
         private readonly ListBox _checkList = new();
         private readonly DataGridView _results = new();
         private readonly Button _exportFailures = new() { Text = "Export failures", Width = 130, Enabled = false };
@@ -67,7 +69,7 @@ namespace regexFinder
 
         private void BuildControls()
         {
-            var top = new TableLayoutPanel { Dock = DockStyle.Top, Height = 480, ColumnCount = 4, RowCount = 8, Padding = new Padding(8) };
+            var top = new TableLayoutPanel { Dock = DockStyle.Top, Height = 550, ColumnCount = 4, RowCount = 9, Padding = new Padding(8) };
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
@@ -123,6 +125,11 @@ namespace regexFinder
             _ignoredTypes.Dock = DockStyle.Fill;
             _ignoredTypes.Height = 75;
             top.Controls.Add(_ignoredTypes, 1, 5);
+            _checkpointTypesLabel = new Label { Text = "Checkpoint receipt types", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
+            top.Controls.Add(_checkpointTypesLabel, 0, 6);
+            _checkpointTypes.Dock = DockStyle.Fill;
+            _checkpointTypes.Height = 75;
+            top.Controls.Add(_checkpointTypes, 1, 6);
 
             var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
             var add = new Button { Text = "Add check", Width = 110 };
@@ -145,7 +152,7 @@ namespace regexFinder
             actions.Controls.Add(remove);
             actions.Controls.Add(save);
             actions.Controls.Add(load);
-            top.Controls.Add(actions, 0, 7);
+            top.Controls.Add(actions, 0, 8);
             top.SetColumnSpan(actions, 4);
 
             _checkList.Dock = DockStyle.Fill;
@@ -229,16 +236,17 @@ namespace regexFinder
             _leftLabel.Visible = _left.Visible = required || comparison || sequence || grandTotal;
             _rightLabel.Visible = _rightPanel.Visible = _termsLabel.Visible = _terms.Visible = comparison;
             _ignoredTypesLabel.Visible = _ignoredTypes.Visible = comparison || grandTotal;
-            _orderLabel.Visible = _orderBy.Visible = hash || sequence || grandTotal;
+            _checkpointTypesLabel.Visible = _checkpointTypes.Visible = grandTotal;
+            _orderLabel.Visible = _orderBy.Visible = hash || sequence;
             _previousLabel.Visible = _previous.Visible = hash || grandTotal;
             _currentLabel.Visible = _current.Visible = hash || grandTotal;
             _toleranceLabel.Visible = _tolerance.Visible = comparison || sequence || grandTotal;
 
-            _leftLabel.Text = comparison ? "Field to compare" : grandTotal ? "Amount field" : "Field";
-            _orderLabel.Text = grandTotal ? "Total field" : "Order by";
+            _leftLabel.Text = comparison ? "Field to compare" : grandTotal ? "Amount / grand total field" : "Field";
+            _orderLabel.Text = "Order by";
             _previousLabel.Text = grandTotal ? "Receipt type field" : "Previous hash";
             _currentLabel.Text = grandTotal ? "Exclude when nonzero" : "Current hash field";
-            _ignoredTypesLabel.Text = grandTotal ? "Included receipt types" : "Ignore receipt types";
+            _ignoredTypesLabel.Text = grandTotal ? "Transaction receipt types" : "Ignore receipt types";
             _toleranceLabel.Text = sequence ? "Sequence step" : "Tolerance";
         }
 
@@ -295,9 +303,15 @@ namespace regexFinder
             if (type == "grandTotalReconciliation")
             {
                 check.AmountField = _left.Text;
-                check.TotalField = _orderBy.Text;
+                check.TotalField = check.AmountField;
                 check.ReceiptTypeField = _previous.Text;
                 check.IncludedReceiptTypes = _ignoredTypes.CheckedItems.Cast<string>().ToList();
+                check.CheckpointReceiptTypes = _checkpointTypes.CheckedItems.Cast<string>().ToList();
+                if (check.CheckpointReceiptTypes.Count == 0)
+                {
+                    MessageBox.Show("Select at least one checkpoint receipt type.");
+                    return;
+                }
                 check.ExcludeIfField = _current.Text;
                 check.ExcludeIfNonZero = !string.IsNullOrWhiteSpace(check.ExcludeIfField);
                 check.Tolerance = ParseDouble(_tolerance.Text, 0.01);
@@ -328,8 +342,14 @@ namespace regexFinder
                 .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             var selected = _ignoredTypes.CheckedItems.Cast<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var selectedCheckpoints = _checkpointTypes.CheckedItems.Cast<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
             _ignoredTypes.Items.Clear();
-            foreach (var type in types) _ignoredTypes.Items.Add(type, selected.Contains(type));
+            _checkpointTypes.Items.Clear();
+            foreach (var type in types)
+            {
+                _ignoredTypes.Items.Add(type, selected.Contains(type));
+                _checkpointTypes.Items.Add(type, selectedCheckpoints.Contains(type));
+            }
         }
 
         private void RemoveTest()
