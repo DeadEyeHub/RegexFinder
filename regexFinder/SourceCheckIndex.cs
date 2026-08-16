@@ -8,6 +8,8 @@ namespace regexFinder
     {
         private readonly Dictionary<string, List<string[]>> _blocks = new(StringComparer.OrdinalIgnoreCase);
 
+        public int Count => _blocks.Values.Sum(blocks => blocks.Count);
+
         public SourceCheckIndex(IReadOnlyList<string> lines, IReadOnlyList<PatternDefinition> patterns)
         {
             var splitter = patterns.FirstOrDefault(p => string.Equals(p.Name, "Splitter", StringComparison.OrdinalIgnoreCase))?.CompiledRegex;

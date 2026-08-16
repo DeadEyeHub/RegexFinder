@@ -54,7 +54,9 @@ namespace regexFinder
         {
             _fields = fields.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.Ordinal).ToList();
             _patterns = patterns ?? Array.Empty<PatternDefinition>();
-            _sourceLines = sourceLines ?? Array.Empty<string>();
+            _sourceLines = sourceLines != null && sourceLines.Count > 0
+                ? sourceLines
+                : LoadSourceLines();
             _sourceIndex = new SourceCheckIndex(_sourceLines, _patterns);
             Text = "CSV Validation Tests";
             StartPosition = FormStartPosition.CenterParent;
@@ -407,6 +409,36 @@ namespace regexFinder
                 .FirstOrDefault() ?? string.Empty;
         }
 
+        private static string[] LoadSourceLines()
+        {
+            var path = FindSourceTxt();
+            if (string.IsNullOrWhiteSpace(path)) return Array.Empty<string>();
+
+            var loader = new FileLoader();
+            loader.LoadTextFile(path, true);
+            return loader.Lines;
+        }
+
+        private static string FindSourceTxt()
+        {
+            var directories = new List<string>();
+            var current = new DirectoryInfo(Application.StartupPath);
+            for (var i = 0; i < 5 && current != null; i++, current = current.Parent)
+                directories.Add(current.FullName);
+
+            var merged = directories
+                .Select(directory => Path.Combine(directory, "merged.txt"))
+                .FirstOrDefault(File.Exists);
+            if (merged != null) return merged;
+
+            return directories.SelectMany(directory => Directory.Exists(directory)
+                    ? Directory.EnumerateFiles(directory, "*.txt")
+                        .Where(path => !string.Equals(Path.GetFileName(path), "shablon.txt", StringComparison.OrdinalIgnoreCase))
+                    : Enumerable.Empty<string>())
+                .OrderByDescending(path => new FileInfo(path).Length)
+                .FirstOrDefault();
+        }
+
         private void RunTests()
         {
             if (_checks.Count == 0)
@@ -443,6 +475,11 @@ namespace regexFinder
         private void ExportFailures()
         {
             if (_lastDocument == null || _lastFailures.Count == 0) return;
+            if (_sourceIndex.Count == 0)
+            {
+                MessageBox.Show("Original TXT blocks were not found. Load the source TXT before exporting failures.");
+                return;
+            }
             using var dialog = new FolderBrowserDialog { Description = "Select a folder for failed test files" };
             if (dialog.ShowDialog(this) != DialogResult.OK) return;
 
