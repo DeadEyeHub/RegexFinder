@@ -206,6 +206,10 @@ namespace regexFinder
                         values[keyName] = found.FirstOrDefault() ?? string.Empty;
                         break;
 
+                    case "last":
+                        values[keyName] = found.LastOrDefault() ?? string.Empty;
+                        break;
+
                     default:
                         throw new InvalidOperationException(
                             $"Unknown combineMethod '{p.CombineMethod}' for pattern '{keyName}'.");
