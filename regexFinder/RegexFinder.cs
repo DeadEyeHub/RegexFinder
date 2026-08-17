@@ -18,16 +18,19 @@ namespace regexFinder
             _token = token;
         }
 
-        public List<List<string>> FindAlChecks(NotificationProgress nf)
+        public List<List<string>> FindAlChecks(NotificationProgress nf = null)
         {
             var results = new List<List<string>>();
 
-            var splitterP = Patterns.FirstOrDefault(p => p.Name == "Splitter")
+            var splitterP = Patterns.FirstOrDefault(p =>
+                    string.Equals(p?.Name, "Splitter", StringComparison.OrdinalIgnoreCase))
                 ?? throw new Exception("Splitter pattern not found");
             var splitterRx = splitterP.CompiledRegex
                 ?? throw new Exception("Splitter regex not compiled or empty");
 
-            var patternsToApply = Patterns.Where(p => p.Name != "Splitter").ToList();
+            var patternsToApply = Patterns
+                .Where(p => !string.Equals(p?.Name, "Splitter", StringComparison.OrdinalIgnoreCase))
+                .ToList();
 
             var headers = patternsToApply.Select(p => p.Name).ToList();
             results.Add(headers);
@@ -37,7 +40,7 @@ namespace regexFinder
 
             for (int i = 0; i < Lines.Count; i++)
             {
-                nf.SetProgress(i + 1, total);
+                nf?.SetProgress(i + 1, total);
                 if (_token.IsCancellationRequested) break;
 
                 bool isLast = (i == Lines.Count - 1);
@@ -79,21 +82,26 @@ namespace regexFinder
             int checkStart, int checkEnd,
             List<PatternDefinition> patternsToApply)
         {
-            var spans = FindBlocksInRange(Lines, checkStart, checkEnd, Blocks);
-
-            if (spans.Count == 0)
-                spans.Add(("__whole__", checkStart, checkEnd));
-
+            var blockSpans = FindBlocksInRange(Lines, checkStart, checkEnd, Blocks);
+            var wholeCheck = (Name: "__whole__", Start: checkStart, End: checkEnd);
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
 
-            foreach (var (blockName, start, end) in spans)
+            foreach (var p in patternsToApply)
             {
-                var pats = patternsToApply;
+                if (p == null) continue;
 
-                var blockValues = ProcessPatternsOnRange(Lines, start, end, pats);
+                var spans = string.IsNullOrWhiteSpace(p.BlockName)
+                    ? new List<(string Name, int Start, int End)> { wholeCheck }
+                    : blockSpans
+                        .Where(span => string.Equals(span.Name, p.BlockName.Trim(), StringComparison.OrdinalIgnoreCase))
+                        .ToList();
 
-                foreach (var kv in blockValues)
-                    values[kv.Key] = kv.Value;
+                var found = new List<string>();
+                foreach (var span in spans)
+                    found.AddRange(FindPatternValues(Lines, span.Start, span.End, p));
+
+                var keyName = p.Name ?? $"field_{values.Count + 1}";
+                values[keyName] = CombinePatternValues(p, found);
             }
 
             ValidateComparisons(values, patternsToApply);
@@ -104,119 +112,135 @@ namespace regexFinder
         private List<(string Name, int Start, int End)> FindBlocksInRange(
             List<string> lines, int s, int e, List<BlockDefinition> blocks)
         {
-            var result = new List<(string, int, int)>();
+            var result = new List<(string Name, int Start, int End)>();
             if (blocks == null || blocks.Count == 0) return result;
 
             foreach (var b in blocks)
             {
                 if (b == null || b.StartsRegex == null || b.EndsRegex == null) continue;
 
-                int start = -1, end = -1;
-
-                for (int i = s; i <= e; i++)
+                var cursor = s;
+                while (cursor <= e)
                 {
-                    if (b.StartsRegex.IsMatch(lines[i])) { start = i; break; }
-                }
-                if (start < 0) continue;
+                    var start = -1;
+                    for (var i = cursor; i <= e; i++)
+                    {
+                        if (b.StartsRegex.IsMatch(lines[i]))
+                        {
+                            start = i;
+                            break;
+                        }
+                    }
 
-                for (int i = start; i <= e; i++)
-                {
-                    if (b.EndsRegex.IsMatch(lines[i])) { end = i; break; }
-                }
-                if (end < 0) continue;
+                    if (start < 0) break;
 
-                result.Add((b.Name ?? $"block_{result.Count + 1}", start, end));
+                    var end = -1;
+                    for (var i = start; i <= e; i++)
+                    {
+                        if (b.EndsRegex.IsMatch(lines[i]))
+                        {
+                            end = i;
+                            break;
+                        }
+                    }
+
+                    if (end < 0)
+                    {
+                        // A malformed receipt should still be processed up to its boundary.
+                        end = e;
+                        result.Add((b.Name ?? $"block_{result.Count + 1}", start, end));
+                        break;
+                    }
+
+                    result.Add((b.Name ?? $"block_{result.Count + 1}", start, end));
+                    cursor = Math.Max(start + 1, end + 1);
+                }
             }
 
-            return result;
+            return result
+                .OrderBy(span => span.Start)
+                .ThenBy(span => span.End)
+                .ThenBy(span => span.Name, StringComparer.Ordinal)
+                .ToList();
         }
 
-        private Dictionary<string, string> ProcessPatternsOnRange(
-            List<string> allLines, int startIdx, int endIdx, List<PatternDefinition> patterns)
+        private List<string> FindPatternValues(
+            List<string> allLines, int startIdx, int endIdx, PatternDefinition p)
         {
-            var values = new Dictionary<string, string>(StringComparer.Ordinal);
-            if (patterns == null || patterns.Count == 0) return values;
+            var found = new List<string>();
+            if (p == null || p.CompiledRegex == null) return found;
 
             int s = Math.Max(0, startIdx);
             int e = Math.Min(allLines.Count - 1, endIdx);
-            if (e < s) return values;
+            if (e < s) return found;
 
-            foreach (var p in patterns)
+            var rx = p.CompiledRegex;
+            if (p.Multiline && p.LinesCount > 1)
             {
-                var rx = p?.CompiledRegex;
-                if (rx == null) { values[p?.Name ?? $"field_{values.Count + 1}"] = string.Empty; continue; }
-
-                var found = new List<string>();
-
-                if (p.Multiline && p.LinesCount > 1)
+                int lineCount = p.LinesCount;
+                for (int i = s; i + lineCount - 1 <= e; i++)
                 {
-                    int L = p.LinesCount;
-                    for (int i = s; i + L - 1 <= e; i++)
-                    {
-                        string combined = string.Join(" ",
-                            Enumerable.Range(0, L)
-                                      .Select(k => allLines[i + k].Trim()));
+                    string combined = string.Join(" ",
+                        Enumerable.Range(0, lineCount)
+                                  .Select(k => allLines[i + k].Trim()));
 
-                        foreach (Match m in rx.Matches(combined))
-                        {
-                            var v = m.Groups.Count > 1 ? m.Groups[1].Value : m.Value;
-                            v = (v ?? "").Trim().Replace(',', '.');
-                            if (v.Length > 0) found.Add(v);
-                        }
-                    }
+                    AddMatches(found, rx, combined);
                 }
-                else
+            }
+            else
+            {
+                for (int i = s; i <= e; i++)
                 {
-                    for (int i = s; i <= e; i++)
-                    {
-                        var text = allLines[i].Trim();
-                        foreach (Match m in rx.Matches(text))
-                        {
-                            var v = m.Groups.Count > 1 ? m.Groups[1].Value : m.Value;
-                            v = (v ?? "").Trim().Replace(',', '.');
-                            if (v.Length > 0) found.Add(v);
-                        }
-                    }
-                }
-
-                var keyName = p.Name ?? $"field_{values.Count + 1}";
-                switch ((p.CombineMethod ?? "first").Trim().ToLowerInvariant())
-                {
-                    case "merge":
-                        values[keyName] = string.Join("; ", found.Distinct());
-                        break;
-
-                    case "sum":
-                        var numericValues = found
-                            .Select(ParseDouble)
-                            .Where(d => d.HasValue)
-                            .Select(d => d!.Value)
-                            .ToList();
-                        if (p.DistinctValues)
-                            numericValues = numericValues.Distinct().ToList();
-
-                        var sum = numericValues.Sum();
-                        values[keyName] = numericValues.Count == 0
-                            ? string.Empty
-                            : sum.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
-                        break;
-
-                    case "none":
-                    case "first":
-                        values[keyName] = found.FirstOrDefault() ?? string.Empty;
-                        break;
-
-                    case "last":
-                        values[keyName] = found.LastOrDefault() ?? string.Empty;
-                        break;
-
-                    default:
-                        throw new InvalidOperationException(
-                            $"Unknown combineMethod '{p.CombineMethod}' for pattern '{keyName}'.");
+                    AddMatches(found, rx, allLines[i].Trim());
                 }
             }
 
-            return values;
+            return found;
+        }
+
+        private static void AddMatches(List<string> found, Regex rx, string text)
+        {
+            foreach (Match m in rx.Matches(text))
+            {
+                var value = m.Groups.Count > 1 ? m.Groups[1].Value : m.Value;
+                value = (value ?? string.Empty).Trim().Replace(',', '.');
+                if (value.Length > 0) found.Add(value);
+            }
+        }
+
+        private static string CombinePatternValues(PatternDefinition p, List<string> found)
+        {
+            var keyName = p.Name ?? "field";
+            switch ((p.CombineMethod ?? "first").Trim().ToLowerInvariant())
+            {
+                case "merge":
+                    return string.Join("; ", found.Distinct());
+
+                case "sum":
+                    var numericValues = found
+                        .Select(ParseDouble)
+                        .Where(d => d.HasValue)
+                        .Select(d => d!.Value)
+                        .ToList();
+                    if (p.DistinctValues)
+                        numericValues = numericValues.Distinct().ToList();
+
+                    var sum = numericValues.Sum();
+                    return numericValues.Count == 0
+                        ? string.Empty
+                        : sum.ToString("0.00", CultureInfo.InvariantCulture);
+
+                case "none":
+                case "first":
+                    return found.FirstOrDefault() ?? string.Empty;
+
+                case "last":
+                    return found.LastOrDefault() ?? string.Empty;
+
+                default:
+                    throw new InvalidOperationException(
+                        $"Unknown combineMethod '{p.CombineMethod}' for pattern '{keyName}'.");
+            }
         }
         private void ValidateComparisons(Dictionary<string, string> values, List<PatternDefinition> patterns)
         {

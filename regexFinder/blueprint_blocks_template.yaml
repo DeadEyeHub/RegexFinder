@@ -1,0 +1,75 @@
+# Copy this file and replace the example regular expressions with rules for
+# the target cash-register format.
+
+# Splitter starts a new receipt. Every receipt must have one matching line.
+blocks:
+  # Header fields: organization, address, registration number.
+  - name: header
+    startsWith: '^N H\s+SIA\b'
+    endsWith: '^[NB]\s+T'
+
+  # Receipt type, number, date and time.
+  - name: receiptInfo
+    startsWith: '^[NB]\s+T'
+    endsWith: '^N D\s+'
+
+  # Repeated item/payment/total lines. The block may occur more than once.
+  - name: body
+    startsWith: '^N B\b'
+    endsWith: '^N s\b'
+
+patterns:
+  - name: Splitter
+    regexCommand: '^N H\s+SIA\b'
+    valueType: string
+    combineMethod: first
+    multiline: false
+    linesCount: 1
+
+  - name: Receipt number
+    blockName: receiptInfo
+    regexCommand: 'SD2\s+(\d+)'
+    valueType: integer
+    combineMethod: first
+    multiline: false
+    linesCount: 1
+
+  - name: Date
+    blockName: receiptInfo
+    regexCommand: '^(?:N D\s+)?(\d{2}\.\d{2}\.\d{4})'
+    valueType: date
+    combineMethod: first
+    multiline: false
+    linesCount: 1
+
+  - name: Items total
+    blockName: body
+    regexCommand: '^N B ITEM.*?([+-]?[0-9]+(?:[.,][0-9]+)?)\s*$'
+    valueType: decimal
+    combineMethod: sum
+    multiline: false
+    linesCount: 1
+
+  - name: Final total
+    blockName: body
+    regexCommand: '(?:TOTAL|GRAND TOTAL)\s*:?[ ]*([+-]?[0-9]+(?:[.,][0-9]+)?)'
+    valueType: decimal
+    combineMethod: last
+    multiline: true
+    linesCount: 2
+
+  - name: Payment
+    blockName: body
+    regexCommand: '^N B PAYMENT.*?([+-]?[0-9]+(?:[.,][0-9]+)?)\s*$'
+    valueType: decimal
+    combineMethod: sum
+    multiline: false
+    linesCount: 1
+
+  # A pattern without blockName searches the whole receipt.
+  - name: Hash
+    regexCommand: '^N [sS]\s+([A-F0-9]{32})'
+    valueType: string
+    combineMethod: first
+    multiline: false
+    linesCount: 1

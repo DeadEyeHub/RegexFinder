@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using YamlDotNet.RepresentationModel;
 using YamlDotNet.Serialization;
@@ -80,6 +81,21 @@ namespace regexFinder
                 catch (Exception ex)
                 {
                     errors.AppendLine($"Pattern '{p?.Name ?? "?"}': {ex.Message} [{p?.RegexCommand}]");
+                }
+            }
+
+            var blockNames = new HashSet<string>(
+                blocks.Where(b => !string.IsNullOrWhiteSpace(b?.Name))
+                      .Select(b => b.Name),
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (var p in patterns)
+            {
+                if (p == null || string.IsNullOrWhiteSpace(p.BlockName)) continue;
+                if (!blockNames.Contains(p.BlockName.Trim()))
+                {
+                    errors.AppendLine(
+                        $"Pattern '{p.Name ?? "?"}' references unknown block '{p.BlockName}'.");
                 }
             }
 

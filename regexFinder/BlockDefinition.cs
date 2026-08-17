@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace regexFinder
 {
@@ -13,7 +9,6 @@ namespace regexFinder
         public string Name { get; set; }
         public string StartsWith { get; set; }
         public string EndsWith { get; set; }
-        public List<PatternDefinition> Patterns { get; set; } = new();
         public bool StartsIsRegex { get; set; } = true;
         public bool EndsIsRegex { get; set; } = true;
 
