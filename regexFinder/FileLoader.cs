@@ -26,14 +26,21 @@ namespace regexFinder
             try
             {
                 var utf8 = new UTF8Encoding(false, true);
-                Lines = utf8.GetString(bytes)
-                    .Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+                Lines = SplitLines(utf8.GetString(bytes));
             }
             catch (DecoderFallbackException)
             {
                 Lines = Encoding.GetEncoding("windows-1257").GetString(bytes)
                     .Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
             }
+        }
+
+        private static string[] SplitLines(string text)
+        {
+            if (text.Length > 0 && text[0] == '\uFEFF')
+                text = text[1..];
+
+            return text.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
         }
 
     }
