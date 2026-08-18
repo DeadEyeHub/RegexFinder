@@ -19,7 +19,6 @@ namespace regexFinder
         public int Row { get; init; }
         public string Key { get; init; }
         public string Message { get; init; }
-        public bool Passed { get; init; }
         public List<string> RelatedKeys { get; init; } = new();
     }
 
@@ -237,6 +236,11 @@ namespace regexFinder
                 results.Add(Fail(check, 0, "", $"Amount field '{check.AmountField}' does not exist in CSV."));
                 return;
             }
+            if (check.CheckpointReceiptTypes == null || check.CheckpointReceiptTypes.Count == 0)
+            {
+                results.Add(Fail(check, 0, "", "At least one checkpoint receipt type must be configured."));
+                return;
+            }
 
             var checkpointStart = 0;
             var accumulated = 0d;
@@ -248,10 +252,7 @@ namespace regexFinder
                     continue;
 
                 var receiptType = Get(rows[i], check.ReceiptTypeField);
-                var checkpointTypes = check.CheckpointReceiptTypes ?? new();
-                var isCheckpoint = checkpointTypes.Count > 0
-                    ? checkpointTypes.Contains(receiptType, StringComparer.OrdinalIgnoreCase)
-                    : TryNumber(Get(rows[i], check.TotalField), out _);
+                var isCheckpoint = check.CheckpointReceiptTypes.Contains(receiptType, StringComparer.OrdinalIgnoreCase);
                 if (!isCheckpoint) continue;
 
                 checkpoints++;
@@ -302,9 +303,7 @@ namespace regexFinder
 
             if (checkpoints == 0)
             {
-                var expectedTypes = (check.CheckpointReceiptTypes ?? new()).Count > 0
-                    ? string.Join(", ", check.CheckpointReceiptTypes)
-                    : $"numeric values in '{check.TotalField}'";
+                var expectedTypes = string.Join(", ", check.CheckpointReceiptTypes);
                 results.Add(Fail(check, 0, "",
                     $"No checkpoint rows found in receipt type field '{check.ReceiptTypeField}' for: {expectedTypes}."));
             }
@@ -387,7 +386,6 @@ namespace regexFinder
             Row = row,
             Key = key,
             Message = message,
-            Passed = false,
             RelatedKeys = relatedKeys ?? (string.IsNullOrWhiteSpace(key) ? new() : new() { key })
         };
     }

@@ -35,45 +35,22 @@ namespace regexFinder
             var headers = patternsToApply.Select(p => p.Name).ToList();
             results.Add(headers);
 
-            int checkBegin = -1;
             int total = Lines.Count;
+            var receiptRanges = ReceiptSplitter.FindRanges(Lines, splitterRx);
+            if (receiptRanges.Count == 0)
+                throw new InvalidOperationException("No receipts matched the Splitter pattern.");
 
-            for (int i = 0; i < Lines.Count; i++)
+            foreach (var (start, end) in receiptRanges)
             {
-                nf?.SetProgress(i + 1, total);
                 if (_token.IsCancellationRequested) break;
-
-                bool isLast = (i == Lines.Count - 1);
-                bool isSplit = splitterRx.IsMatch(Lines[i]) || isLast;
-
-                if (checkBegin < 0)
-                {
-                    if (isSplit)
-                    {
-                        checkBegin = i;
-                        if (isLast)
-                        {
-                            var values1 = ProcessCheckByBlocks(checkBegin, i, patternsToApply);
-                            var row1 = headers.Select(h => values1.TryGetValue(h, out var v) ? v : string.Empty).ToList();
-                            results.Add(row1);
-                            checkBegin = -1;
-                        }
-                    }
-                    continue;
-                }
-
-                if (!isSplit) continue;
-
-                int checkEnd = isLast ? i : i - 1;
-                if (checkEnd >= checkBegin)
-                {
-                    var values = ProcessCheckByBlocks(checkBegin, checkEnd, patternsToApply);
-                    var row = headers.Select(h => values.TryGetValue(h, out var v) ? v : string.Empty).ToList();
-                    results.Add(row);
-                }
-
-                checkBegin = isLast ? -1 : i;
+                nf?.SetProgress(end + 1, total);
+                var values = ProcessCheckByBlocks(start, end, patternsToApply);
+                var row = headers.Select(h => values.TryGetValue(h, out var v) ? v : string.Empty).ToList();
+                results.Add(row);
             }
+
+            if (!_token.IsCancellationRequested)
+                nf?.SetProgress(total, total);
 
             return results;
         }
@@ -103,8 +80,6 @@ namespace regexFinder
                 var keyName = p.Name ?? $"field_{values.Count + 1}";
                 values[keyName] = CombinePatternValues(p, found);
             }
-
-            ValidateComparisons(values, patternsToApply);
 
             return values;
         }
@@ -178,32 +153,43 @@ namespace regexFinder
             if (p.Multiline && p.LinesCount > 1)
             {
                 int lineCount = p.LinesCount;
-                for (int i = s; i + lineCount - 1 <= e; i++)
+                for (int i = s; i <= e; i++)
                 {
-                    string combined = string.Join(" ",
-                        Enumerable.Range(0, lineCount)
-                                  .Select(k => allLines[i + k].Trim()));
+                    var windowLines = Enumerable.Range(0, Math.Min(lineCount, e - i + 1))
+                        .Select(k => allLines[i + k].Trim())
+                        .ToList();
+                    string combined = string.Join(" ", windowLines);
+                    int? nextLineStart = windowLines.Count > 1 ? windowLines[0].Length + 1 : null;
 
-                    AddMatches(found, rx, combined);
+                    AddMatches(found, rx, combined, p.ValueType, nextLineStart);
                 }
             }
             else
             {
                 for (int i = s; i <= e; i++)
                 {
-                    AddMatches(found, rx, allLines[i].Trim());
+                    AddMatches(found, rx, allLines[i].Trim(), p.ValueType);
                 }
             }
 
             return found;
         }
 
-        private static void AddMatches(List<string> found, Regex rx, string text)
+        private static void AddMatches(
+            List<string> found,
+            Regex rx,
+            string text,
+            string valueType,
+            int? matchStartLimit = null)
         {
             foreach (Match m in rx.Matches(text))
             {
+                if (matchStartLimit.HasValue && m.Index >= matchStartLimit.Value) continue;
                 var value = m.Groups.Count > 1 ? m.Groups[1].Value : m.Value;
-                value = (value ?? string.Empty).Trim().Replace(',', '.');
+                value = (value ?? string.Empty).Trim();
+                if (string.Equals(valueType, "decimal", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(valueType, "integer", StringComparison.OrdinalIgnoreCase))
+                    value = value.Replace(',', '.');
                 if (value.Length > 0) found.Add(value);
             }
         }
@@ -230,7 +216,6 @@ namespace regexFinder
                         ? string.Empty
                         : sum.ToString("0.00", CultureInfo.InvariantCulture);
 
-                case "none":
                 case "first":
                     return found.FirstOrDefault() ?? string.Empty;
 
@@ -242,43 +227,6 @@ namespace regexFinder
                         $"Unknown combineMethod '{p.CombineMethod}' for pattern '{keyName}'.");
             }
         }
-        private void ValidateComparisons(Dictionary<string, string> values, List<PatternDefinition> patterns)
-        {
-            const double TOL = 0.02;
-
-            foreach (var p in patterns)
-            {
-                if (string.IsNullOrWhiteSpace(p?.CompareTo)) continue;
-                var name = p.Name;
-                if (!values.TryGetValue(name, out var curStr)) continue;
-
-                var cur = ParseDouble(curStr);
-                if (cur is null) continue;
-
-                var targets = p.CompareTo.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                if (targets.Length == 0) continue;
-
-                double sum = 0;
-                bool any = false;
-                foreach (var t in targets)
-                {
-                    if (!values.TryGetValue(t, out var vstr)) continue;
-                    var v = ParseDouble(vstr);
-                    if (v.HasValue) { sum += v.Value; any = true; }
-                }
-                if (!any) continue;
-
-                double denom = Math.Max(1.0, Math.Abs(sum));
-                double relDiff = Math.Abs(cur.Value - sum) / denom;
-
-                if (relDiff > TOL)
-                {
-                    System.Diagnostics.Debug.WriteLine(
-                        $"CompareTo mismatch: {name}={cur.Value} vs sum({string.Join("+", targets)})={sum} (diff={relDiff:P1})");
-                }
-            }
-        }
-
         private static double? ParseDouble(string s)
         {
             if (string.IsNullOrWhiteSpace(s)) return null;

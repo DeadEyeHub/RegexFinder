@@ -17,7 +17,6 @@ namespace regexFinder
         public string CurrentField { get; set; }
         public double Step { get; set; } = 1;
         public string AmountField { get; set; }
-        public string TotalField { get; set; }
         public string ReceiptTypeField { get; set; }
         public List<string> IncludedReceiptTypes { get; set; } = new();
         public List<string> CheckpointReceiptTypes { get; set; } = new();

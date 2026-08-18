@@ -9,26 +9,17 @@ namespace regexFinder
         public string Name { get; set; }
         public string StartsWith { get; set; }
         public string EndsWith { get; set; }
-        public bool StartsIsRegex { get; set; } = true;
-        public bool EndsIsRegex { get; set; } = true;
 
         [JsonIgnore] public Regex StartsRegex { get; private set; }
         [JsonIgnore] public Regex EndsRegex { get; private set; }
 
-        public void BuildRegexes(RegexOptions extraOptions = RegexOptions.None,
-                                 TimeSpan? timeout = null,
-                                 bool ignoreCase = true,
-                                 bool autoDetectRegex = false)
+        public void BuildRegexes(TimeSpan? timeout = null, bool ignoreCase = true)
         {
-            var opts = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Multiline | extraOptions;
+            var opts = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Multiline;
             if (ignoreCase) opts |= RegexOptions.IgnoreCase;
 
-            StartsRegex = Make(StartsWith,
-                               autoDetectRegex ? IsProbablyRegex(StartsWith) : StartsIsRegex,
-                               opts, timeout);
-            EndsRegex = Make(EndsWith,
-                               autoDetectRegex ? IsProbablyRegex(EndsWith) : EndsIsRegex,
-                               opts, timeout);
+            StartsRegex = Make(StartsWith, IsProbablyRegex(StartsWith), opts, timeout);
+            EndsRegex = Make(EndsWith, IsProbablyRegex(EndsWith), opts, timeout);
         }
 
         private static Regex Make(string spec, bool treatAsRegex, RegexOptions options, TimeSpan? timeout)

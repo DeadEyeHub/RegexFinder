@@ -13,12 +13,9 @@ namespace regexFinder
     public sealed class TestForm : Form
     {
         private readonly List<string> _fields;
-        private readonly IReadOnlyList<PatternDefinition> _patterns;
-        private readonly IReadOnlyList<string> _sourceLines;
         private readonly List<CheckDefinition> _checks = new();
         private readonly ComboBox _type = new();
         private readonly ComboBox _left = new();
-        private readonly ComboBox _field = new();
         private readonly ComboBox _orderBy = new();
         private readonly ComboBox _previous = new();
         private readonly ComboBox _current = new();
@@ -53,9 +50,9 @@ namespace regexFinder
             IReadOnlyList<string> sourceLines = null)
         {
             _fields = fields.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.Ordinal).ToList();
-            _patterns = patterns ?? Array.Empty<PatternDefinition>();
-            _sourceLines = sourceLines ?? Array.Empty<string>();
-            _sourceIndex = new SourceCheckIndex(_sourceLines, _patterns);
+            _sourceIndex = new SourceCheckIndex(
+                sourceLines ?? Array.Empty<string>(),
+                patterns ?? Array.Empty<PatternDefinition>());
             Text = "CSV Validation Tests";
             StartPosition = FormStartPosition.CenterParent;
             Width = 1300;
@@ -193,7 +190,6 @@ namespace regexFinder
             foreach (var field in _fields)
             {
                 _left.Items.Add(field);
-                _field.Items.Add(field);
                 _orderBy.Items.Add(field);
                 _previous.Items.Add(field);
                 _current.Items.Add(field);
@@ -202,7 +198,6 @@ namespace regexFinder
             if (_left.Items.Count > 0)
             {
                 _left.SelectedIndex = 0;
-                _field.SelectedIndex = 0;
                 _orderBy.SelectedIndex = 0;
                 _previous.SelectedIndex = 0;
                 _current.SelectedIndex = 0;
@@ -326,7 +321,6 @@ namespace regexFinder
             if (type == "grandTotalReconciliation")
             {
                 check.AmountField = _left.Text;
-                check.TotalField = check.AmountField;
                 check.ReceiptTypeField = _previous.Text;
                 if (string.IsNullOrWhiteSpace(check.ReceiptTypeField) ||
                     string.Equals(check.ReceiptTypeField, check.AmountField, StringComparison.OrdinalIgnoreCase))

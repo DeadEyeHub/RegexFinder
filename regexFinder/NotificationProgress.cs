@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 
 namespace regexFinder
 {
@@ -15,13 +10,15 @@ namespace regexFinder
         }
        
 
-        public void SetProgress(int progress, int from) { 
-            if ((progress % 5) == 0)
-            {   
-                _tbProgress.Text = $"{progress} of {from}";
-                _progressBar.Value = (int)((double)progress / from * 10000);
-                Application.DoEvents();
-            }
+        public void SetProgress(int progress, int from) {
+            if (from <= 0) return;
+
+            var value = (int)((double)progress / from * 10000);
+            if (progress < from && value == _progressBar.Value) return;
+
+            _tbProgress.Text = $"{progress} of {from}";
+            _progressBar.Value = value;
+            Application.DoEvents();
         }
 
         private readonly TextBox _tbProgress;

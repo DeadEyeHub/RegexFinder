@@ -9,6 +9,9 @@ namespace regexFinder
     {
         public static int Inject(string masterPath, string correctedPath, string outputPath)
         {
+            if (string.Equals(Path.GetFullPath(masterPath), Path.GetFullPath(outputPath), StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("Output CSV must be different from master CSV.");
+
             var master = CsvValidator.LoadDocument(masterPath);
             var corrected = CsvValidator.LoadDocument(correctedPath);
             const string keyField = "Ceka numurs";
@@ -23,7 +26,7 @@ namespace regexFinder
             var output = new List<List<string>> { master.Headers };
             foreach (var row in master.Rows)
             {
-                var key = row[keyField];
+                var key = row[keyField].Trim();
                 var replacement = correctedRows.TryGetValue(key, out var correctedRow) ? correctedRow : row;
                 output.Add(master.Headers.Select(header => replacement[header]).ToList());
             }

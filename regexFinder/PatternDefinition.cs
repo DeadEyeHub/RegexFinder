@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace regexFinder
 {
@@ -14,7 +10,6 @@ namespace regexFinder
         public string RegexCommand { get; set; }
         public string BlockName { get; set; }
         public string CombineMethod { get; set; }
-        public string CompareTo { get; set; }
         public string ValueType { get; set; }
         public bool Multiline { get; set; }
         public int LinesCount { get; set; }

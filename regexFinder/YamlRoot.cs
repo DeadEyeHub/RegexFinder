@@ -9,11 +9,8 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace regexFinder
 {
-    public class YamlRoot
+    public static class YamlRoot
     {
-        public List<BlockDefinition> Blocks { get; set; }
-        public List<PatternDefinition> Patterns { get; set; }
-
         public static (List<BlockDefinition> Blocks, List<PatternDefinition> Patterns) LoadParts(string path)
         {
             var yamlText = File.ReadAllText(path);
@@ -64,7 +61,7 @@ namespace regexFinder
             {
                 try
                 {
-                    b.BuildRegexes(timeout: TimeSpan.FromSeconds(2), ignoreCase: true, autoDetectRegex: true);
+                    b.BuildRegexes(timeout: TimeSpan.FromSeconds(2), ignoreCase: true);
                 }
                 catch (Exception ex)
                 {

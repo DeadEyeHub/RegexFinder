@@ -14,17 +14,13 @@ namespace regexFinder
             var keyPattern = patterns.FirstOrDefault(p => string.Equals(p.Name, "Ceka numurs", StringComparison.OrdinalIgnoreCase))?.CompiledRegex;
             if (splitter == null || keyPattern == null) return;
 
-            var current = new List<string>();
-            foreach (var line in lines)
+            foreach (var (start, end) in ReceiptSplitter.FindRanges(lines, splitter))
             {
-                if (splitter.IsMatch(line) && current.Count > 0)
-                {
-                    AddBlock(current, keyPattern);
-                    current = new List<string>();
-                }
-                current.Add(line);
+                var block = Enumerable.Range(start, end - start + 1)
+                    .Select(index => lines[index])
+                    .ToArray();
+                AddBlock(block, keyPattern);
             }
-            if (current.Count > 0) AddBlock(current, keyPattern);
         }
 
         public IEnumerable<string[]> GetBlocks(IEnumerable<string> keys)
@@ -37,11 +33,12 @@ namespace regexFinder
             }
         }
 
-        private void AddBlock(List<string> lines, System.Text.RegularExpressions.Regex keyPattern)
+        private void AddBlock(IReadOnlyList<string> lines, System.Text.RegularExpressions.Regex keyPattern)
         {
             var key = lines.SelectMany(line => keyPattern.Matches(line).Cast<System.Text.RegularExpressions.Match>())
                 .Select(match => match.Groups.Count > 1 ? match.Groups[1].Value : match.Value)
-                .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+                .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))
+                ?.Trim();
             if (string.IsNullOrWhiteSpace(key)) return;
             if (!_blocks.TryGetValue(key, out var blocks))
                 _blocks[key] = blocks = new List<string[]>();
