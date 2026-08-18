@@ -66,6 +66,15 @@ patterns:
     multiline: false
     linesCount: 1
 
+  # A non-empty marker excludes the receipt from comparison and grand-total checks.
+  - name: IsCancelled
+    blockName: body
+    regexCommand: 'CANCELLED RECEIPT'
+    valueType: string
+    combineMethod: first
+    multiline: false
+    linesCount: 1
+
   # A pattern without blockName searches the whole receipt.
   - name: Hash
     regexCommand: '^N [sS]\s+([A-F0-9]{32})'

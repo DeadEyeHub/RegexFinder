@@ -102,6 +102,9 @@ namespace regexFinder
         {
             for (var i = 0; i < rows.Count; i++)
             {
+                if (IsCancelled(rows[i], check))
+                    continue;
+
                 if ((check.IgnoreReceiptTypes ?? new()).Contains(Get(rows[i], "Ceka tips"), StringComparer.OrdinalIgnoreCase))
                     continue;
 
@@ -112,12 +115,10 @@ namespace regexFinder
                     .Distinct(StringComparer.Ordinal)
                     .ToList();
                 var emptyFields = selectedFields.Where(field => string.IsNullOrWhiteSpace(Get(rows[i], field))).ToList();
-                if (emptyFields.Count == selectedFields.Count && selectedFields.Count > 0)
-                {
-                    results.Add(Fail(check, i + 2, GetKey(rows[i]), "All fields empty."));
-                    continue;
-                }
                 var actualText = Get(rows[i], check.Left);
+                if (string.IsNullOrWhiteSpace(actualText))
+                    continue;
+
                 if (!TryNumber(actualText, out var actual))
                 {
                     var details = emptyFields.Count > 0
@@ -128,6 +129,7 @@ namespace regexFinder
                 }
 
                 var expected = 0d;
+                var addendCount = 0;
                 var missing = new List<string>();
                 foreach (var field in check.Right ?? new())
                 {
@@ -136,7 +138,10 @@ namespace regexFinder
                     if (!TryNumber(text, out var value))
                         missing.Add(field);
                     else
+                    {
                         expected += value;
+                        addendCount++;
+                    }
                 }
 
                 foreach (var field in check.Subtract ?? new())
@@ -158,6 +163,9 @@ namespace regexFinder
                         $"Non-numeric fields: {string.Join(", ", missing)}.{emptyDetails}"));
                     continue;
                 }
+
+                if (addendCount == 0)
+                    continue;
 
                 if (Math.Abs(actual - expected) > check.Tolerance)
                 {
@@ -219,6 +227,9 @@ namespace regexFinder
 
             for (var i = 0; i < rows.Count; i++)
             {
+                if (IsCancelled(rows[i], check))
+                    continue;
+
                 var receiptType = Get(rows[i], check.ReceiptTypeField);
                 var checkpointTypes = check.CheckpointReceiptTypes ?? new();
                 var isCheckpoint = checkpointTypes.Count > 0
@@ -233,6 +244,7 @@ namespace regexFinder
 
                 foreach (var row in rangeRows)
                 {
+                    if (IsCancelled(row, check)) continue;
                     if (!IsIncludedReceipt(row, check)) continue;
                     if (IsExcludedReceipt(row, check)) continue;
                     var key = GetKey(row);
@@ -279,6 +291,18 @@ namespace regexFinder
             if (!check.ExcludeIfNonZero || string.IsNullOrWhiteSpace(check.ExcludeIfField)) return false;
             var value = Get(row, check.ExcludeIfField);
             return TryNumber(value, out var number) ? Math.Abs(number) > check.Tolerance : !string.IsNullOrWhiteSpace(value);
+        }
+
+        private static bool IsCancelled(Dictionary<string, string> row, CheckDefinition check)
+        {
+            if (check == null || !check.SkipCancelledReceipts ||
+                string.IsNullOrWhiteSpace(check.CancelledField)) return false;
+
+            var value = Get(row, check.CancelledField);
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            return TryNumber(value, out var number)
+                ? Math.Abs(number) > 0.000001
+                : true;
         }
 
         private static List<(Dictionary<string, string> row, int index)> OrderRows(

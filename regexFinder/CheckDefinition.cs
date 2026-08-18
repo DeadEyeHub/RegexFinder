@@ -23,6 +23,8 @@ namespace regexFinder
         public List<string> CheckpointReceiptTypes { get; set; } = new();
         public string ExcludeIfField { get; set; }
         public bool ExcludeIfNonZero { get; set; }
+        public string CancelledField { get; set; } = "IsCancelled";
+        public bool SkipCancelledReceipts { get; set; } = true;
         public bool Cumulative { get; set; } = true;
     }
 }
