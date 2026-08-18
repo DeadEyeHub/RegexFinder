@@ -10,7 +10,7 @@ namespace regexFinder
         public string Left { get; set; }
         public List<string> Right { get; set; } = new();
         public List<string> Subtract { get; set; } = new();
-        public List<string> IgnoreReceiptTypes { get; set; } = new();
+        public List<string> IncludedReceiptTypes { get; set; } = new();
         public double Tolerance { get; set; } = 0.01;
         public string OrderBy { get; set; }
         public string PreviousField { get; set; }
@@ -18,7 +18,6 @@ namespace regexFinder
         public double Step { get; set; } = 1;
         public string AmountField { get; set; }
         public string ReceiptTypeField { get; set; }
-        public List<string> IncludedReceiptTypes { get; set; } = new();
         public List<string> CheckpointReceiptTypes { get; set; } = new();
         public string ExcludeIfField { get; set; }
         public bool ExcludeIfNonZero { get; set; }

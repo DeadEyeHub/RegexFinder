@@ -99,12 +99,23 @@ namespace regexFinder
             CheckDefinition check,
             List<CheckResult> results)
         {
+            if (check.IncludedReceiptTypes == null || check.IncludedReceiptTypes.Count == 0)
+            {
+                results.Add(Fail(check, 0, "", "At least one receipt type must be selected for comparison."));
+                return;
+            }
+            if (rows.Count > 0 && !rows[0].ContainsKey("Ceka tips"))
+            {
+                results.Add(Fail(check, 0, "", "Receipt type field 'Ceka tips' does not exist in CSV."));
+                return;
+            }
+
             for (var i = 0; i < rows.Count; i++)
             {
                 if (IsCancelled(rows[i], check))
                     continue;
 
-                if ((check.IgnoreReceiptTypes ?? new()).Contains(Get(rows[i], "Ceka tips"), StringComparer.OrdinalIgnoreCase))
+                if (!check.IncludedReceiptTypes.Contains(Get(rows[i], "Ceka tips"), StringComparer.OrdinalIgnoreCase))
                     continue;
 
                 var selectedFields = new[] { check.Left }

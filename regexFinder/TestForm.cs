@@ -20,7 +20,7 @@ namespace regexFinder
         private readonly ComboBox _previous = new();
         private readonly ComboBox _current = new();
         private readonly CheckedListBox _availableFields = new();
-        private readonly CheckedListBox _ignoredTypes = new();
+        private readonly CheckedListBox _receiptTypes = new();
         private readonly CheckedListBox _checkpointTypes = new();
         private readonly ListBox _terms = new();
         private readonly TextBox _name = new();
@@ -34,7 +34,7 @@ namespace regexFinder
         private Label _rightLabel;
         private Panel _rightPanel;
         private Label _termsLabel;
-        private Label _ignoredTypesLabel;
+        private Label _receiptTypesLabel;
         private Label _checkpointTypesLabel;
         private readonly ListBox _checkList = new();
         private readonly DataGridView _results = new();
@@ -122,11 +122,11 @@ namespace regexFinder
             _terms.Dock = DockStyle.Fill;
             _terms.Height = 75;
             top.Controls.Add(_terms, 3, 5);
-            _ignoredTypesLabel = new Label { Text = "Ignore receipt types", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
-            top.Controls.Add(_ignoredTypesLabel, 0, 5);
-            _ignoredTypes.Dock = DockStyle.Fill;
-            _ignoredTypes.Height = 75;
-            top.Controls.Add(_ignoredTypes, 1, 5);
+            _receiptTypesLabel = new Label { Text = "Receipt types to use", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
+            top.Controls.Add(_receiptTypesLabel, 0, 5);
+            _receiptTypes.Dock = DockStyle.Fill;
+            _receiptTypes.Height = 75;
+            top.Controls.Add(_receiptTypes, 1, 5);
             _checkpointTypesLabel = new Label { Text = "Checkpoint receipt types", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
             top.Controls.Add(_checkpointTypesLabel, 0, 6);
             _checkpointTypes.Dock = DockStyle.Fill;
@@ -235,7 +235,7 @@ namespace regexFinder
 
             _leftLabel.Visible = _left.Visible = required || comparison || sequence || grandTotal;
             _rightLabel.Visible = _rightPanel.Visible = _termsLabel.Visible = _terms.Visible = comparison;
-            _ignoredTypesLabel.Visible = _ignoredTypes.Visible = comparison || grandTotal;
+            _receiptTypesLabel.Visible = _receiptTypes.Visible = comparison || grandTotal;
             _checkpointTypesLabel.Visible = _checkpointTypes.Visible = grandTotal;
             _orderLabel.Visible = _orderBy.Visible = hash || sequence;
             _previousLabel.Visible = _previous.Visible = hash || grandTotal;
@@ -246,7 +246,7 @@ namespace regexFinder
             _orderLabel.Text = "Order by";
             _previousLabel.Text = grandTotal ? "Receipt type field" : "Previous hash";
             _currentLabel.Text = grandTotal ? "Exclude when nonzero" : "Current hash field";
-            _ignoredTypesLabel.Text = grandTotal ? "Transaction receipt types" : "Ignore receipt types";
+            _receiptTypesLabel.Text = grandTotal ? "Transaction receipt types" : "Receipt types to use";
             _toleranceLabel.Text = sequence ? "Sequence step" : "Tolerance";
 
             if (grandTotal)
@@ -304,7 +304,12 @@ namespace regexFinder
                     return;
                 }
                 check.Tolerance = ParseDouble(_tolerance.Text, 0.01);
-                check.IgnoreReceiptTypes = _ignoredTypes.CheckedItems.Cast<string>().ToList();
+                check.IncludedReceiptTypes = _receiptTypes.CheckedItems.Cast<string>().ToList();
+                if (check.IncludedReceiptTypes.Count == 0)
+                {
+                    MessageBox.Show("Select at least one receipt type to use.");
+                    return;
+                }
             }
             if (type == "hashSequence")
             {
@@ -328,7 +333,7 @@ namespace regexFinder
                     MessageBox.Show("Select the column containing receipt type names, usually 'Ceka tips'.");
                     return;
                 }
-                check.IncludedReceiptTypes = _ignoredTypes.CheckedItems.Cast<string>().ToList();
+                check.IncludedReceiptTypes = _receiptTypes.CheckedItems.Cast<string>().ToList();
                 check.CheckpointReceiptTypes = _checkpointTypes.CheckedItems.Cast<string>().ToList();
                 if (check.CheckpointReceiptTypes.Count == 0)
                 {
@@ -365,13 +370,13 @@ namespace regexFinder
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            var selected = _ignoredTypes.CheckedItems.Cast<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var selected = _receiptTypes.CheckedItems.Cast<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
             var selectedCheckpoints = _checkpointTypes.CheckedItems.Cast<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
-            _ignoredTypes.Items.Clear();
+            _receiptTypes.Items.Clear();
             _checkpointTypes.Items.Clear();
             foreach (var type in types)
             {
-                _ignoredTypes.Items.Add(type, selected.Contains(type));
+                _receiptTypes.Items.Add(type, selected.Contains(type));
                 _checkpointTypes.Items.Add(type, selectedCheckpoints.Contains(type));
             }
         }
