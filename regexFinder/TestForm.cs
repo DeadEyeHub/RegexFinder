@@ -93,6 +93,11 @@ namespace regexFinder
             });
             _type.SelectedIndex = 0;
             _type.SelectedIndexChanged += (_, _) => UpdateEditor();
+            _previous.SelectedIndexChanged += (_, _) =>
+            {
+                if (SelectedType == "grandTotalReconciliation")
+                    LoadReceiptTypes(_csvPath.Text, _previous.Text);
+            };
 
             _leftLabel = Add(top, "Field / left", _left, 0, 2, 1);
             _orderLabel = Add(top, "Order by", _orderBy, 2, 2, 1);
@@ -248,6 +253,24 @@ namespace regexFinder
             _currentLabel.Text = grandTotal ? "Exclude when nonzero" : "Current hash field";
             _ignoredTypesLabel.Text = grandTotal ? "Transaction receipt types" : "Ignore receipt types";
             _toleranceLabel.Text = sequence ? "Sequence step" : "Tolerance";
+
+            if (grandTotal)
+            {
+                SelectField(_left, "Summa");
+                SelectField(_previous, "Ceka tips");
+                SelectField(_current, "Anulets");
+                LoadReceiptTypes(_csvPath.Text, _previous.Text);
+            }
+        }
+
+        private static void SelectField(ComboBox comboBox, string field)
+        {
+            for (var i = 0; i < comboBox.Items.Count; i++)
+            {
+                if (!string.Equals(comboBox.Items[i]?.ToString(), field, StringComparison.OrdinalIgnoreCase)) continue;
+                comboBox.SelectedIndex = i;
+                return;
+            }
         }
 
         private void AddSourceField(bool subtract)
@@ -305,6 +328,12 @@ namespace regexFinder
                 check.AmountField = _left.Text;
                 check.TotalField = check.AmountField;
                 check.ReceiptTypeField = _previous.Text;
+                if (string.IsNullOrWhiteSpace(check.ReceiptTypeField) ||
+                    string.Equals(check.ReceiptTypeField, check.AmountField, StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show("Select the column containing receipt type names, usually 'Ceka tips'.");
+                    return;
+                }
                 check.IncludedReceiptTypes = _ignoredTypes.CheckedItems.Cast<string>().ToList();
                 check.CheckpointReceiptTypes = _checkpointTypes.CheckedItems.Cast<string>().ToList();
                 if (check.CheckpointReceiptTypes.Count == 0)
@@ -328,15 +357,16 @@ namespace regexFinder
             if (dialog.ShowDialog(this) == DialogResult.OK)
             {
                 _csvPath.Text = dialog.FileName;
-                LoadReceiptTypes(_csvPath.Text);
+                LoadReceiptTypes(_csvPath.Text,
+                    SelectedType == "grandTotalReconciliation" ? _previous.Text : "Ceka tips");
             }
         }
 
-        private void LoadReceiptTypes(string path)
+        private void LoadReceiptTypes(string path, string receiptTypeField = "Ceka tips")
         {
-            if (!File.Exists(path)) return;
+            if (!File.Exists(path) || string.IsNullOrWhiteSpace(receiptTypeField)) return;
             var rows = CsvValidator.Load(path);
-            var types = rows.Select(row => row.TryGetValue("Ceka tips", out var value) ? value : string.Empty)
+            var types = rows.Select(row => row.TryGetValue(receiptTypeField, out var value) ? value : string.Empty)
                 .Where(value => !string.IsNullOrWhiteSpace(value))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
@@ -387,9 +417,26 @@ namespace regexFinder
                 throw new InvalidDataException("The YAML file does not contain a checks section.");
 
             _checks.Clear();
+            foreach (var check in checks)
+                NormalizeCheck(check);
             _checks.AddRange(checks);
             _checkList.Items.Clear();
             foreach (var check in _checks) _checkList.Items.Add(check.Name);
+        }
+
+        private void NormalizeCheck(CheckDefinition check, IEnumerable<string> availableFields = null)
+        {
+            var fields = (availableFields ?? _fields).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (string.Equals(check.Type, "grandTotalReconciliation", StringComparison.OrdinalIgnoreCase) &&
+                fields.Contains("Ceka tips") &&
+                (string.IsNullOrWhiteSpace(check.ReceiptTypeField) ||
+                 string.Equals(check.ReceiptTypeField, check.AmountField, StringComparison.OrdinalIgnoreCase)))
+                check.ReceiptTypeField = "Ceka tips";
+
+            if (fields.Contains("IsCancelled") &&
+                (string.IsNullOrWhiteSpace(check.CancelledField) ||
+                 string.Equals(check.CancelledField, "Anulets", StringComparison.OrdinalIgnoreCase)))
+                check.CancelledField = "IsCancelled";
         }
 
         private static string FindLatestCsv()
@@ -423,6 +470,8 @@ namespace regexFinder
             try
             {
                 _lastDocument = CsvValidator.LoadDocument(_csvPath.Text);
+                foreach (var check in _checks)
+                    NormalizeCheck(check, _lastDocument.Headers);
                 _lastFailures = CsvValidator.Run(_lastDocument.Rows, _checks);
                 _results.Rows.Clear();
                 foreach (var failure in _lastFailures)

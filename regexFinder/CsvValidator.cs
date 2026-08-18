@@ -221,6 +221,23 @@ namespace regexFinder
             CheckDefinition check,
             List<CheckResult> results)
         {
+            if (string.IsNullOrWhiteSpace(check.ReceiptTypeField))
+            {
+                results.Add(Fail(check, 0, "", "Receipt type field is not configured."));
+                return;
+            }
+            if (rows.Count > 0 && !rows[0].ContainsKey(check.ReceiptTypeField))
+            {
+                results.Add(Fail(check, 0, "", $"Receipt type field '{check.ReceiptTypeField}' does not exist in CSV."));
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(check.AmountField) ||
+                (rows.Count > 0 && !rows[0].ContainsKey(check.AmountField)))
+            {
+                results.Add(Fail(check, 0, "", $"Amount field '{check.AmountField}' does not exist in CSV."));
+                return;
+            }
+
             var checkpointStart = 0;
             var accumulated = 0d;
             var checkpoints = 0;
@@ -235,7 +252,10 @@ namespace regexFinder
                 var isCheckpoint = checkpointTypes.Count > 0
                     ? checkpointTypes.Contains(receiptType, StringComparer.OrdinalIgnoreCase)
                     : TryNumber(Get(rows[i], check.TotalField), out _);
-                if (!isCheckpoint || !TryNumber(Get(rows[i], check.AmountField), out var total)) continue;
+                if (!isCheckpoint) continue;
+
+                checkpoints++;
+                var hasTotal = TryNumber(Get(rows[i], check.AmountField), out var total);
 
                 var rangeRows = rows.Skip(checkpointStart).Take(i - checkpointStart).ToList();
                 var rangeKeys = rangeRows.Select(GetKey).Where(key => !string.IsNullOrWhiteSpace(key)).ToList();
@@ -266,18 +286,28 @@ namespace regexFinder
                 var rangeTotal = values.Sum();
                 accumulated += rangeTotal;
                 var expected = check.Cumulative ? accumulated : rangeTotal;
-                if (Math.Abs(total - expected) > check.Tolerance)
+                if (!hasTotal)
+                {
+                    results.Add(Fail(check, i + 2, GetKey(rows[i]),
+                        $"Checkpoint '{check.AmountField}' is empty or non-numeric.", rangeKeys));
+                }
+                else if (Math.Abs(total - expected) > check.Tolerance)
                 {
                     results.Add(Fail(check, i + 2, GetKey(rows[i]),
                         $"{check.AmountField}={total:0.00}; expected {expected:0.00}; range {rangeTotal:0.00}.", rangeKeys));
                 }
 
-                checkpoints++;
                 checkpointStart = i + 1;
             }
 
             if (checkpoints == 0)
-                results.Add(Fail(check, 0, "", $"No checkpoint rows found for '{check.AmountField}'."));
+            {
+                var expectedTypes = (check.CheckpointReceiptTypes ?? new()).Count > 0
+                    ? string.Join(", ", check.CheckpointReceiptTypes)
+                    : $"numeric values in '{check.TotalField}'";
+                results.Add(Fail(check, 0, "",
+                    $"No checkpoint rows found in receipt type field '{check.ReceiptTypeField}' for: {expectedTypes}."));
+            }
         }
 
         private static bool IsIncludedReceipt(Dictionary<string, string> row, CheckDefinition check)
