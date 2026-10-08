@@ -1,0 +1,62 @@
+name: Build and release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Read version from tag
+        run: |
+          $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Expected tag in format v1.2.3"
+          }
+          "APP_VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Build application
+        run: |
+          dotnet publish regexFinder/regexFinder.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            --output publish `
+            "-p:Version=$env:APP_VERSION" `
+            "-p:AssemblyVersion=$env:APP_VERSION.0" `
+            "-p:FileVersion=$env:APP_VERSION.0" `
+            "-p:InformationalVersion=$env:APP_VERSION" `
+            -p:IncludeSourceRevisionInInformationalVersion=false
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Create ZIP
+        run: |
+          Copy-Item regexFinder/blueprint_blocks_template.yaml publish/
+          Compress-Archive -Path publish/* `
+            -DestinationPath "regexFinder-$env:APP_VERSION-win-x64.zip"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$env:GITHUB_REF_NAME" `
+            "regexFinder-$env:APP_VERSION-win-x64.zip" `
+            --verify-tag `
+            --title "regexFinder $env:APP_VERSION" `
+            --generate-notes
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
