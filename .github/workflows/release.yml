@@ -2,14 +2,20 @@ name: Build and release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - master
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: release-master
+  cancel-in-progress: false
+
 jobs:
   release:
+    if: github.ref == 'refs/heads/master'
     runs-on: windows-latest
     defaults:
       run:
@@ -17,46 +23,73 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check project version and existing release
+        id: version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          [xml]$project = Get-Content regexFinder/regexFinder.csproj -Raw
+          $version = [string]$project.Project.PropertyGroup.Version
+          if ($version -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
+            throw "Expected <Version> in format 1.2.3 in regexFinder.csproj"
+          }
+          foreach ($part in $version.Split('.')) {
+            if ([long]$part -gt 65534) { throw "Version components must be at most 65534" }
+          }
+          "APP_VERSION=$version" >> $env:GITHUB_ENV
+          $tag = "v$version"
+          $releaseTags = @(gh api --paginate "repos/$env:GITHUB_REPOSITORY/releases" --jq '.[].tag_name')
+          if ($LASTEXITCODE -ne 0) { throw "Could not check existing releases" }
+          if ($releaseTags -contains $tag) {
+            "publish=false" >> $env:GITHUB_OUTPUT
+            "Release $tag already exists; skipping publication." >> $env:GITHUB_STEP_SUMMARY
+            exit 0
+          }
+          # Never attach a build to a tag pointing at different source code.
+          $existingTag = git tag --list $tag
+          if ($LASTEXITCODE -ne 0) { throw "Could not check existing tags" }
+          if ($existingTag) {
+            $tagCommit = git rev-list -n 1 $tag
+            if ($LASTEXITCODE -ne 0) { throw "Could not resolve existing tag" }
+            if ($tagCommit -ne $env:GITHUB_SHA) {
+              throw "Tag $tag already points to another commit. Increase <Version>."
+            }
+          }
+          "publish=true" >> $env:GITHUB_OUTPUT
 
       - uses: actions/setup-dotnet@v6
+        if: steps.version.outputs.publish == 'true'
         with:
           dotnet-version: '8.0.x'
 
-      - name: Read version from tag
-        run: |
-          $version = $env:GITHUB_REF_NAME -replace '^v', ''
-          if ($version -notmatch '^\d+\.\d+\.\d+$') {
-            throw "Expected tag in format v1.2.3"
-          }
-          "APP_VERSION=$version" >> $env:GITHUB_ENV
-
       - name: Build application
+        if: steps.version.outputs.publish == 'true'
         run: |
           dotnet publish regexFinder/regexFinder.csproj `
             --configuration Release `
             --runtime win-x64 `
             --self-contained true `
-            --output publish `
-            "-p:Version=$env:APP_VERSION" `
-            "-p:AssemblyVersion=$env:APP_VERSION.0" `
-            "-p:FileVersion=$env:APP_VERSION.0" `
-            "-p:InformationalVersion=$env:APP_VERSION" `
-            -p:IncludeSourceRevisionInInformationalVersion=false
+            --output publish
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Create ZIP
+        if: steps.version.outputs.publish == 'true'
         run: |
           Copy-Item regexFinder/blueprint_blocks_template.yaml publish/
           Compress-Archive -Path publish/* `
             -DestinationPath "regexFinder-$env:APP_VERSION-win-x64.zip"
 
       - name: Publish release
+        if: steps.version.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "$env:GITHUB_REF_NAME" `
+          gh release create "v$env:APP_VERSION" `
             "regexFinder-$env:APP_VERSION-win-x64.zip" `
-            --verify-tag `
+            --target "$env:GITHUB_SHA" `
             --title "regexFinder $env:APP_VERSION" `
             --generate-notes
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

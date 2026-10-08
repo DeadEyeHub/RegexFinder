@@ -21,7 +21,7 @@ The application also includes tools for validating generated CSV files, exportin
 To run the application:
 
 - Windows 10 or later.
-- .NET 8 Desktop Runtime.
+- .NET 8 Desktop Runtime for local framework-dependent builds. GitHub release ZIPs include the runtime.
 
 To build the application:
 
@@ -45,7 +45,21 @@ Release output is written to:
 regexFinder/bin/Release/net8.0-windows/
 ```
 
-The application is framework-dependent. Keep the complete output directory together and install the .NET 8 Desktop Runtime on the target machine.
+The local build above is framework-dependent. Keep the complete output directory together and install the .NET 8 Desktop Runtime on the target machine.
+
+## Automatic GitHub Releases
+
+`.github/workflows/release.yml` runs on pushes to `master`. The release version comes from `<Version>` in `regexFinder/regexFinder.csproj`; assembly, file, and displayed product versions are derived from it.
+
+To publish a new version:
+
+1. Increase `<Version>`, for example from `1.0.0` to `1.0.1`. Use three numeric components (`major.minor.patch`, each at most 65534).
+2. Commit and push the changes to `master` on GitHub.
+3. Wait for **Build and release** under **Actions**, then download the ZIP from **Releases**.
+
+If that version has no release yet, the workflow builds a self-contained Windows x64 application, packages it with `blueprint_blocks_template.yaml`, and creates the `v<Version>` tag and release for the exact commit built. Extract the entire ZIP before running `regexFinder.exe`; no separate .NET installation is needed.
+
+Pushes with an already released version skip publication. Existing releases are never overwritten. An existing tag pointing to another commit causes an error: increase `<Version>` to publish the new source. The workflow can also be retried through **Run workflow** on `master` after a failure. Repository rules must allow the workflow token to create release tags.
 
 ## Quick Start
 
