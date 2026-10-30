@@ -38,6 +38,9 @@ namespace regexFinder
 
             try
             {
+                bTransform.Enabled = bBills.Enabled = bRegex.Enabled = bTests.Enabled = UTF8.Enabled = false;
+                pbConverter.Value = 0;
+                tbProgress.Text = "Processing receipts...";
                 var finder = new RegexFinder(_cancellationTokenSource.Token)
                 {
                     Lines = _lines.ToList(),
@@ -57,12 +60,20 @@ namespace regexFinder
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     new CsvExporter().ExportResultToCsv(results, saveFileDialog.FileName);
+                    tbProgress.Text = $"Saved: {Path.GetFileName(saveFileDialog.FileName)}";
                     MessageBox.Show($"Results exported to {saveFileDialog.FileName}");
                 }
+                else tbProgress.Text = "Save cancelled. Transform again to save the CSV.";
             }
             catch (Exception ex)
             {
+                tbProgress.Text = "Conversion failed. Check your files and try again.";
                 MessageBox.Show($"Error processing file: {ex.Message}");
+            }
+            finally
+            {
+                if (!IsDisposed)
+                    bTransform.Enabled = bBills.Enabled = bRegex.Enabled = bTests.Enabled = UTF8.Enabled = true;
             }
         }
 

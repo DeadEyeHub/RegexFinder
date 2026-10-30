@@ -33,6 +33,7 @@ namespace regexFinder
         private Label _toleranceLabel;
         private Label _rightLabel;
         private Panel _rightPanel;
+        private TableLayoutPanel _editor;
         private Label _termsLabel;
         private Label _receiptTypesLabel;
         private Label _checkpointTypesLabel;
@@ -54,12 +55,17 @@ namespace regexFinder
                 sourceLines ?? Array.Empty<string>(),
                 patterns ?? Array.Empty<PatternDefinition>());
             Text = "CSV Validation Tests";
+            Font = new Font("Segoe UI", 9F);
+            BackColor = AppTheme.Canvas;
+            ForeColor = AppTheme.Ink;
+            MinimumSize = new Size(1100, 780);
             StartPosition = FormStartPosition.CenterParent;
             Width = 1300;
             Height = 780;
             _tolerance.Text = "0.01";
             _csvPath.Text = initialCsvPath ?? FindLatestCsv();
             BuildControls();
+            AppTheme.Apply(this);
             FillFields();
             LoadReceiptTypes(_csvPath.Text);
         }
@@ -67,6 +73,8 @@ namespace regexFinder
         private void BuildControls()
         {
             var top = new TableLayoutPanel { Dock = DockStyle.Top, Height = 550, ColumnCount = 4, RowCount = 9, Padding = new Padding(8) };
+            _editor = top;
+            for (var row = 0; row < 9; row++) top.RowStyles.Add(new RowStyle(SizeType.Absolute, 0));
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
             top.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
@@ -108,7 +116,7 @@ namespace regexFinder
             addSource.Click += (_, _) => AddSourceField(false);
             var removeSource = new Button { Text = "- Remove field", Width = 120 };
             removeSource.Click += (_, _) => AddSourceField(true);
-            var sourceToolbar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 32, WrapContents = false };
+            var sourceToolbar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 44, WrapContents = false };
             sourceToolbar.Controls.Add(new Label { Text = "Select columns, then:", AutoSize = true, Padding = new Padding(0, 7, 8, 0) });
             sourceToolbar.Controls.Add(addSource);
             sourceToolbar.Controls.Add(removeSource);
@@ -160,6 +168,19 @@ namespace regexFinder
             _checkList.Dock = DockStyle.Fill;
             _results.Dock = DockStyle.Fill;
             _results.ReadOnly = true;
+            _results.BackgroundColor = Color.White;
+            _results.BorderStyle = BorderStyle.None;
+            _results.RowHeadersVisible = false;
+            _results.EnableHeadersVisualStyles = false;
+            _results.ColumnHeadersDefaultCellStyle.BackColor = AppTheme.Canvas;
+            _results.ColumnHeadersDefaultCellStyle.ForeColor = AppTheme.Ink;
+            _results.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
+            _results.DefaultCellStyle.SelectionBackColor = AppTheme.Accent;
+            _results.DefaultCellStyle.SelectionForeColor = Color.White;
+            _results.AlternatingRowsDefaultCellStyle.BackColor = AppTheme.Canvas;
+            _results.GridColor = AppTheme.Border;
+            _results.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+            _results.RowTemplate.Height = 28;
             _results.AllowUserToAddRows = false;
             _results.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             _results.Columns.Add("Check", "Check");
@@ -167,7 +188,7 @@ namespace regexFinder
             _results.Columns.Add("Key", "Key");
             _results.Columns.Add("Message", "Message");
 
-            var bottom = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 48, WrapContents = false };
+            var bottom = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 56, Padding = new Padding(8), WrapContents = false };
             var run = new Button { Text = "Run checks", Width = 120, Height = 42 };
             run.Click += (_, _) => RunTests();
             _exportFailures.Click += (_, _) => ExportFailures();
@@ -176,9 +197,25 @@ namespace regexFinder
             bottom.Controls.Add(run);
             bottom.Controls.Add(_exportFailures);
             bottom.Controls.Add(inject);
-            var split = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Vertical, SplitterDistance = 300 };
+            var split = new SplitContainer {
+                Dock = DockStyle.Fill, Orientation = Orientation.Vertical,
+                Size = new Size(1260, 280), SplitterDistance = 280,
+                FixedPanel = FixedPanel.Panel1, Panel1MinSize = 220, Panel2MinSize = 400
+            };
             split.Panel1.Controls.Add(_checkList);
             split.Panel2.Controls.Add(_results);
+            var checksTitle = AppTheme.Label("Saved checks", 10, true);
+            checksTitle.Dock = DockStyle.Top;
+            checksTitle.AutoSize = false;
+            checksTitle.Height = 32;
+            checksTitle.Padding = new Padding(8, 0, 0, 0);
+            split.Panel1.Controls.Add(checksTitle);
+            var resultsTitle = AppTheme.Label("Validation results", 10, true);
+            resultsTitle.Dock = DockStyle.Top;
+            resultsTitle.AutoSize = false;
+            resultsTitle.Height = 32;
+            resultsTitle.Padding = new Padding(8, 0, 0, 0);
+            split.Panel2.Controls.Add(resultsTitle);
             Controls.Add(split);
             Controls.Add(bottom);
             Controls.Add(top);
@@ -248,6 +285,14 @@ namespace regexFinder
             _currentLabel.Text = grandTotal ? "Exclude when nonzero" : "Current hash field";
             _receiptTypesLabel.Text = grandTotal ? "Transaction receipt types" : "Receipt types to use";
             _toleranceLabel.Text = sequence ? "Sequence step" : "Tolerance";
+
+            var heights = new[] { 44, 38, 38, hash || grandTotal ? 38 : 0,
+                comparison ? 155 : sequence || grandTotal ? 38 : 0,
+                comparison || grandTotal ? 85 : 0, grandTotal ? 85 : 0, 0, 48 };
+            _editor.SuspendLayout();
+            for (var row = 0; row < heights.Length; row++) _editor.RowStyles[row].Height = heights[row];
+            _editor.Height = heights.Sum() + _editor.Padding.Vertical;
+            _editor.ResumeLayout(true);
 
             if (grandTotal)
             {

@@ -1,4 +1,7 @@
-﻿namespace regexFinder
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace regexFinder
 {
     partial class Form1
     {
@@ -6,197 +9,136 @@
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
-            {
-                components.Dispose();
-            }
+            if (disposing) components?.Dispose();
             base.Dispose(disposing);
         }
 
-        #region Windows Form Designer generated code
-
         private void InitializeComponent()
         {
-            label1 = new System.Windows.Forms.Label();
-            bTransform = new System.Windows.Forms.Button();
-            bBills = new System.Windows.Forms.Button();
-            bRegex = new System.Windows.Forms.Button();
-            bTests = new System.Windows.Forms.Button();
-            textBox1 = new System.Windows.Forms.TextBox();
-            textBox2 = new System.Windows.Forms.TextBox();
-            textBox3 = new System.Windows.Forms.TextBox();
-            textBox4 = new System.Windows.Forms.TextBox();
-            textBox5 = new System.Windows.Forms.TextBox();
-            textBox6 = new System.Windows.Forms.TextBox();
-            textBox7 = new System.Windows.Forms.TextBox();
-            textBox8 = new System.Windows.Forms.TextBox();
-            tbProgress = new System.Windows.Forms.TextBox();
-            pbConverter = new System.Windows.Forms.ProgressBar();
-            UTF8 = new System.Windows.Forms.CheckBox();
-            buildInfoLabel = new System.Windows.Forms.Label();
             SuspendLayout();
-            label1.AutoSize = true;
-            label1.Font = new System.Drawing.Font("MingLiU_HKSCS-ExtB", 26.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, 0);
-            label1.ImageAlign = System.Drawing.ContentAlignment.TopCenter;
-            label1.Location = new System.Drawing.Point(91, 160);
-            label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            label1.Name = "label1";
-            label1.Size = new System.Drawing.Size(1031, 53);
-            label1.TabIndex = 0;
-            label1.Text = "Cash register bills to CSV converter";
-            bTransform.Location = new System.Drawing.Point(973, 748);
-            bTransform.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            bTransform.Name = "bTransform";
-            bTransform.Size = new System.Drawing.Size(124, 44);
-            bTransform.TabIndex = 1;
-            bTransform.Text = "Transform";
-            bTransform.UseVisualStyleBackColor = true;
-            bTransform.Click += bTransform_Click;
-            bBills.Location = new System.Drawing.Point(70, 748);
-            bBills.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            bBills.Name = "bBills";
-            bBills.Size = new System.Drawing.Size(233, 44);
-            bBills.TabIndex = 2;
-            bBills.Text = "Upload cash register bills";
-            bBills.UseVisualStyleBackColor = true;
-            bBills.Click += bBills_Click;
-            bRegex.Location = new System.Drawing.Point(483, 748);
-            bRegex.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            bRegex.Name = "bRegex";
-            bRegex.Size = new System.Drawing.Size(243, 44);
-            bRegex.TabIndex = 3;
-            bRegex.Text = "Upload Regex commands";
-            bRegex.UseVisualStyleBackColor = true;
-            bRegex.Click += bRegex_Click;
-            bTests.Location = new System.Drawing.Point(770, 748);
-            bTests.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            bTests.Name = "bTests";
-            bTests.Size = new System.Drawing.Size(145, 44);
-            bTests.TabIndex = 17;
-            bTests.Text = "Tests";
-            bTests.UseVisualStyleBackColor = true;
-            bTests.Click += bTests_Click;
-            textBox1.Font = new System.Drawing.Font("Arial", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, 0);
-            textBox1.Location = new System.Drawing.Point(573, 232);
-            textBox1.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            textBox1.Name = "textBox1";
-            textBox1.Size = new System.Drawing.Size(213, 44);
-            textBox1.TabIndex = 4;
-            textBox1.Text = "How to use:";
-            textBox2.Location = new System.Drawing.Point(153, 342);
-            textBox2.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            textBox2.Name = "textBox2";
-            textBox2.Size = new System.Drawing.Size(535, 31);
-            textBox2.TabIndex = 5;
-            textBox2.Text = "1. Upload txt file";
-            textBox3.Location = new System.Drawing.Point(153, 394);
-            textBox3.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            textBox3.Name = "textBox3";
-            textBox3.Size = new System.Drawing.Size(535, 31);
-            textBox3.TabIndex = 6;
-            textBox3.Text = "2. Upload YAML file";
-            textBox4.Location = new System.Drawing.Point(153, 446);
-            textBox4.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            textBox4.Name = "textBox4";
-            textBox4.Size = new System.Drawing.Size(164, 31);
-            textBox4.TabIndex = 7;
-            textBox4.Text = "3. Press transform";
-            textBox5.Location = new System.Drawing.Point(153, 496);
-            textBox5.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            textBox5.Name = "textBox5";
-            textBox5.Size = new System.Drawing.Size(164, 31);
-            textBox5.TabIndex = 8;
-            textBox5.Text = "4. Wait";
-            textBox6.Location = new System.Drawing.Point(153, 546);
-            textBox6.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            textBox6.Name = "textBox6";
-            textBox6.Size = new System.Drawing.Size(194, 31);
-            textBox6.TabIndex = 9;
-            textBox6.Text = "5. Save your CSV file";
-            textBox7.Location = new System.Drawing.Point(524, 698);
-            textBox7.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            textBox7.Name = "textBox7";
-            textBox7.Size = new System.Drawing.Size(164, 31);
-            textBox7.TabIndex = 11;
-            textBox8.Location = new System.Drawing.Point(102, 698);
-            textBox8.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            textBox8.Name = "textBox8";
-            textBox8.Size = new System.Drawing.Size(164, 31);
-            textBox8.TabIndex = 12;
-            tbProgress.Location = new System.Drawing.Point(954, 270);
-            tbProgress.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            tbProgress.Name = "tbProgress";
-            tbProgress.ReadOnly = true;
-            tbProgress.Size = new System.Drawing.Size(251, 31);
-            tbProgress.TabIndex = 13;
-            tbProgress.TabStop = false;
-            pbConverter.Location = new System.Drawing.Point(213, 630);
-            pbConverter.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            pbConverter.Maximum = 10000;
-            pbConverter.Name = "pbConverter";
-            pbConverter.Size = new System.Drawing.Size(926, 36);
-            pbConverter.TabIndex = 14;
-            UTF8.AutoSize = true;
-            UTF8.Location = new System.Drawing.Point(70, 801);
-            UTF8.Name = "UTF8";
-            UTF8.Size = new System.Drawing.Size(78, 29);
-            UTF8.TabIndex = 15;
-            UTF8.Text = "UTF8";
-            UTF8.Checked = true;
-            UTF8.UseVisualStyleBackColor = true;
-            buildInfoLabel.AutoSize = true;
-            buildInfoLabel.Location = new System.Drawing.Point(850, 805);
-            buildInfoLabel.Name = "buildInfoLabel";
-            buildInfoLabel.Size = new System.Drawing.Size(0, 25);
-            buildInfoLabel.TabIndex = 16;
-            AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
-            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(1333, 865);
-            Controls.Add(UTF8);
-            Controls.Add(pbConverter);
-            Controls.Add(tbProgress);
-            Controls.Add(textBox8);
-            Controls.Add(textBox7);
-            Controls.Add(textBox6);
-            Controls.Add(textBox5);
-            Controls.Add(textBox4);
-            Controls.Add(textBox3);
-            Controls.Add(textBox2);
-            Controls.Add(textBox1);
-            Controls.Add(bRegex);
-            Controls.Add(bTests);
-            Controls.Add(bBills);
-            Controls.Add(bTransform);
-            Controls.Add(label1);
-            Controls.Add(buildInfoLabel);
-            Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            Font = new Font("Segoe UI", 10F);
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+            BackColor = AppTheme.Canvas;
+            ForeColor = AppTheme.Ink;
+            ClientSize = new Size(920, 650);
+            MinimumSize = new Size(740, 650);
+            StartPosition = FormStartPosition.CenterScreen;
             Name = "Form1";
-            Text = "Window";
-            FormClosing += Form1_FormClosing;
-            ResumeLayout(false);
-            PerformLayout();
+            Text = "regexFinder";
 
+            var page = new TableLayoutPanel {
+                Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 7,
+                Padding = new Padding(32, 24, 32, 16), AutoScroll = true
+            };
+            page.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            for (int i = 0; i < 5; i++) page.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            page.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            page.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+            var heading = AppTheme.Label("Cash register bills to CSV converter", 22, true);
+            heading.Margin = new Padding(0, 0, 0, 10);
+            page.Controls.Add(heading, 0, 0);
+            var instructions = AppTheme.Label("Load your TXT file and YAML rules, then transform and save the CSV.");
+            instructions.Margin = new Padding(0, 0, 0, 24);
+            page.Controls.Add(instructions, 0, 1);
+
+            bBills = new Button { Name = "bBills", Text = "&Upload cash register bills", TabIndex = 0 };
+            bRegex = new Button { Name = "bRegex", Text = "Upload &Regex commands", TabIndex = 0 };
+            textBox8 = FileStatus("textBox8", "No TXT file loaded", "Loaded cash register file");
+            textBox7 = FileStatus("textBox7", "No YAML file loaded", "Loaded extraction rules");
+            UTF8 = new CheckBox {
+                Name = "UTF8", Text = "UTF&8", Checked = true, AutoSize = true,
+                Margin = new Padding(0, 12, 0, 0), TabIndex = 1,
+                AccessibleDescription = "Use UTF-8 with Windows-1257 fallback when loading the text file."
+            };
+            page.Controls.Add(InputSection("1. Source text", bBills, textBox8, UTF8), 0, 2);
+            page.Controls.Add(InputSection("2. Extraction rules", bRegex, textBox7, null), 0, 3);
+
+            var output = new TableLayoutPanel {
+                AutoSize = true, Dock = DockStyle.Top, ColumnCount = 1, RowCount = 4,
+                Margin = new Padding(0, 8, 0, 0)
+            };
+            output.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            output.Controls.Add(AppTheme.Label("3. Transform and save", 12, true), 0, 0);
+            tbProgress = new TextBox {
+                Name = "tbProgress", ReadOnly = true, BorderStyle = BorderStyle.None,
+                BackColor = AppTheme.Canvas, ForeColor = AppTheme.Muted, Dock = DockStyle.Fill,
+                Text = "Ready when both files are loaded.", TabStop = false,
+                AccessibleName = "Conversion progress", Margin = new Padding(0, 2, 0, 10)
+            };
+            output.Controls.Add(tbProgress, 0, 1);
+            pbConverter = new ProgressBar {
+                Name = "pbConverter", Dock = DockStyle.Fill, Height = 12, Maximum = 10000,
+                Margin = new Padding(0, 0, 0, 16), AccessibleName = "Conversion progress"
+            };
+            output.Controls.Add(pbConverter, 0, 2);
+            var actions = new FlowLayoutPanel {
+                Dock = DockStyle.Fill, AutoSize = true, Margin = Padding.Empty,
+                FlowDirection = FlowDirection.LeftToRight, WrapContents = true
+            };
+            bTransform = new Button { Name = "bTransform", Text = "&Transform", Margin = new Padding(0, 0, 12, 0), TabIndex = 0 };
+            bTests = new Button { Name = "bTests", Text = "&Tests", Margin = Padding.Empty, TabIndex = 1 };
+            AppTheme.StyleButton(bTransform, true);
+            AppTheme.StyleButton(bTests);
+            actions.Controls.Add(bTransform);
+            actions.Controls.Add(bTests);
+            output.Controls.Add(actions, 0, 3);
+            page.Controls.Add(output, 0, 4);
+            buildInfoLabel = AppTheme.Label("");
+            buildInfoLabel.Name = "buildInfoLabel";
+            buildInfoLabel.Font = new Font("Segoe UI", 9F);
+            buildInfoLabel.Margin = new Padding(0, 20, 0, 0);
+            page.Controls.Add(buildInfoLabel, 0, 6);
+            Controls.Add(page);
+
+            bBills.Click += bBills_Click;
+            bRegex.Click += bRegex_Click;
+            bTransform.Click += bTransform_Click;
+            bTests.Click += bTests_Click;
+            FormClosing += Form1_FormClosing;
+            ResumeLayout(true);
         }
 
-        #endregion
+        private static TextBox FileStatus(string name, string text, string accessibleName)
+        {
+            return new TextBox {
+                Name = name, Text = text, ReadOnly = true, TabStop = false,
+                Dock = DockStyle.Fill, BorderStyle = BorderStyle.FixedSingle,
+                BackColor = Color.White, ForeColor = AppTheme.Muted,
+                AccessibleName = accessibleName, Margin = new Padding(0, 4, 0, 4)
+            };
+        }
 
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Button bTransform;
-        private System.Windows.Forms.Button bBills;
-        private System.Windows.Forms.Button bRegex;
-        private System.Windows.Forms.Button bTests;
-        private System.Windows.Forms.TextBox textBox1;
-        private System.Windows.Forms.TextBox textBox2;
-        private System.Windows.Forms.TextBox textBox3;
-        private System.Windows.Forms.TextBox textBox4;
-        private System.Windows.Forms.TextBox textBox5;
-        private System.Windows.Forms.TextBox textBox6;
-        private System.Windows.Forms.TextBox textBox7;
-        private System.Windows.Forms.TextBox textBox8;
-        private System.Windows.Forms.TextBox tbProgress;
-        private System.Windows.Forms.ProgressBar pbConverter;
-        private System.Windows.Forms.CheckBox UTF8;
-        private System.Windows.Forms.Label buildInfoLabel;
+        private static TableLayoutPanel InputSection(string title, Button browse, TextBox status, Control option)
+        {
+            var section = new TableLayoutPanel {
+                Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, RowCount = 3,
+                Margin = new Padding(0, 0, 0, 24)
+            };
+            section.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            section.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            var label = AppTheme.Label(title, 12, true);
+            section.Controls.Add(label, 0, 0);
+            section.SetColumnSpan(label, 2);
+            section.Controls.Add(status, 0, 1);
+            AppTheme.StyleButton(browse);
+            browse.MinimumSize = new Size(196, 32);
+            browse.Margin = new Padding(16, 0, 0, 0);
+            section.Controls.Add(browse, 1, 1);
+            if (option != null) { section.Controls.Add(option, 0, 2); section.SetColumnSpan(option, 2); }
+            return section;
+        }
+
+        private Button bTransform;
+        private Button bBills;
+        private Button bRegex;
+        private Button bTests;
+        private TextBox textBox7;
+        private TextBox textBox8;
+        private TextBox tbProgress;
+        private ProgressBar pbConverter;
+        private CheckBox UTF8;
+        private Label buildInfoLabel;
     }
 }
-
